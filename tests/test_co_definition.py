@@ -18,14 +18,10 @@ def test_create_co_definition():
 
 def test_identity_is_deterministic():
     args = ("self-a", "self-b", "trust", "2026-09-21T00:00:00Z")
-
     assert create_co_definition(*args).id == create_co_definition(*args).id
 
 
-@pytest.mark.parametrize(
-    "index",
-    [0, 1, 2, 3],
-)
+@pytest.mark.parametrize("index", [0, 1, 2, 3])
 def test_empty_defining_input_is_rejected(index):
     values = ["self-a", "self-b", "trust", "2026-09-21T00:00:00Z"]
     values[index] = "   "
@@ -46,7 +42,7 @@ def test_result_is_immutable():
         item.left_id = "other"
 
 
-def test_endpoint_order_is_structurally significant():
+def test_endpoint_order_is_structurally_significant():
     forward = create_co_definition(
         "self-a", "self-b", "trust", "2026-09-21T00:00:00Z"
     )
