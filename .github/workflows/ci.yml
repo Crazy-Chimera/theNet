@@ -23,6 +23,7 @@ jobs:
       - name: Install test runner
         run: python -m pip install --upgrade pip pytest
       - name: Run tests
+        # Keep the repository root importable for the primitive modules.
         env:
           PYTHONPATH: .
         run: python -m pytest -q
