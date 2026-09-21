@@ -2,39 +2,40 @@
 
 ## Purpose
 
-Φ is the first structural representation of a relation set. It derives a deterministic structural fingerprint from explicit relations without mutating the underlying entities or relations.
+Φ is the structural layer of theNet. It turns an entity reference and its explicit relation identifiers into a deterministic structural fingerprint without interpreting, verifying, or mutating the relations.
 
 ## Input
 
-A finite iterable of relation objects. Each relation must expose:
-
-- `id`
-- `source_id`
-- `target_id`
-- `kind`
+- `subject_id`: non-empty string.
+- `relation_ids`: finite list or tuple of relation IDs; each ID must be a non-empty string.
+- Relation identifiers are treated as a set for structural identity, so their order does not affect the result.
 
 ## Output
 
-An immutable `PhiStructure` containing:
+Immutable `PhiStructure`:
 
-- `id`: SHA-256 fingerprint of the canonical relation structure
-- `relation_ids`: sorted unique relation identifiers
-- `node_ids`: sorted unique subject identifiers appearing in the relations
-- `version`: `1`
+- `id`: SHA-256 identifier of the canonical structural payload.
+- `subject_id`: subject represented by the structure.
+- `relation_ids`: canonical sorted tuple of unique relation IDs.
+- `version`: `1`.
 
 ## Invariants
 
-1. The input relation collection is not mutated.
-2. Relation ordering does not affect the resulting structure ID.
-3. Repeated relation IDs are represented once.
-4. The same structural input produces the same ID.
-5. Changing a relation identifier changes the structure ID.
-6. Changing a relation endpoint or kind changes the structure ID when the corresponding relation ID changes.
-7. An empty relation collection is valid and produces an empty structural state.
-8. The output is immutable.
-9. Φ does not verify relations, establish consensus, infer meaning, allocate resources, or mutate memory.
-10. No external service is required.
+1. Empty or non-string `subject_id` is rejected.
+2. Empty, non-string, or invalid relation IDs are rejected.
+3. Relation order does not change structural identity.
+4. Duplicate relation IDs do not create duplicate structural edges.
+5. Same canonical input produces the same `id`.
+6. Different subject or relation membership produces a different `id`.
+7. Output is immutable.
+8. Φ does not resolve relation existence.
+9. Φ does not imply verification, consensus, contribution, memory, convergence, meaning, or action.
+10. No external services are required.
 
 ## Boundary
 
-Genesis creates subjects. Relation creates directed links. Φ represents the resulting relational structure. Verification, convergence, meaning, memory, expression, self-knowledge and co-definition remain later concerns.
+Genesis creates subjects. Relation creates explicit links. Φ represents the resulting local structure. Later layers may use the fingerprint for coherence, resonance, convergence, or memory.
+
+## Verification
+
+Tests cover construction, canonicalization, determinism, invalid input, immutability, and structural identity changes.
