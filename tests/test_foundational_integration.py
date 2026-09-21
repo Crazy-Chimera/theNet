@@ -1,0 +1,44 @@
+from src.genesis import create_genesis
+from src.omega import create_omega_transition
+from src.phi import create_phi
+from src.relation import create_relation
+
+
+STAMP = "2026-09-21T00:00:00Z"
+
+
+def test_foundational_chain_genesis_relation_phi_omega():
+    source = create_genesis("agent:a", STAMP)
+    target = create_genesis("agent:b", STAMP)
+
+    relation = create_relation(
+        source.id,
+        target.id,
+        "observation",
+        STAMP,
+    )
+    structure = create_phi([relation])
+    transition = create_omega_transition(
+        structure.id,
+        source.id,
+        "verified structural evolution",
+        STAMP,
+    )
+
+    assert relation.source_id == source.id
+    assert relation.target_id == target.id
+    assert structure.relation_ids == (relation.id,)
+    assert structure.node_ids == tuple(sorted((source.id, target.id)))
+    assert transition.from_state == structure.id
+    assert transition.to_state == source.id
+
+
+def test_foundational_chain_preserves_immutable_boundaries():
+    source = create_genesis("agent:a", STAMP)
+    target = create_genesis("agent:b", STAMP)
+    relation = create_relation(source.id, target.id, "observation", STAMP)
+    structure = create_phi([relation])
+
+    assert source.relations == ()
+    assert target.relations == ()
+    assert structure.relation_ids == (relation.id,)
