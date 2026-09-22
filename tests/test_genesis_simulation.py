@@ -1,7 +1,11 @@
 import pytest
 
 from src.genesis import create_genesis
-from src.genesis_simulation import GenesisSimulation, simulate_genesis_proposal
+from src.genesis_simulation import (
+    GenesisSimulation,
+    simulate_genesis_bootstrap,
+    simulate_genesis_proposal,
+)
 from thenet.engine import simulate_genesis_agents
 
 
@@ -67,3 +71,22 @@ def test_genesis_simulation_matches_bootstrap_gate_boundary():
     assert gate.approved is True
     result = simulate_genesis_proposal(3, 2, "proposal", STAMP)
     assert len(result.verifier_ids) == gate.verifier_count
+
+
+def test_genesis_bootstrap_derives_majority_quorum():
+    result = simulate_genesis_bootstrap(5, "bootstrap proposal", STAMP)
+
+    assert len(result.verifier_ids) == 2
+    assert result.proposer_id not in result.verifier_ids
+
+
+def test_genesis_bootstrap_rejects_single_agent_population():
+    with pytest.raises(ValueError, match="independent verifier"):
+        simulate_genesis_bootstrap(1, "bootstrap proposal", STAMP)
+
+
+def test_genesis_bootstrap_is_deterministic():
+    first = simulate_genesis_bootstrap(5, "bootstrap proposal", STAMP)
+    second = simulate_genesis_bootstrap(5, "bootstrap proposal", STAMP)
+
+    assert first == second
