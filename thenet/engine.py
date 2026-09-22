@@ -169,3 +169,18 @@ def advance_collectively(
         new_singularity_id,
         created_at,
     )
+
+
+def allocate_resources(
+    utilities: list[RelationalUtility],
+    memory_resource: ResourceState,
+    compute_resource: ResourceState,
+    coherence_by_contributor: dict[str, float],
+) -> SelfOrganizingAllocation:
+    """Expose verified-signal resource allocation through the runtime facade."""
+    return allocate_memory_and_compute(
+        utilities,
+        memory_resource,
+        compute_resource,
+        coherence_by_contributor,
+    )
