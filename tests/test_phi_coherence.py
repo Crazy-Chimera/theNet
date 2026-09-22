@@ -56,3 +56,12 @@ def test_relation_order_does_not_change_coherence():
 def test_wrong_type_is_rejected():
     with pytest.raises(TypeError):
         phi_coherence(object())
+
+
+def test_phi_entrypoint_integrates_with_coherence():
+    from src.phi import create_phi
+
+    relation = create_relation("a", "b", "knows", STAMP)
+    state = create_phi([relation])
+
+    assert phi_coherence(state) == 1.0
