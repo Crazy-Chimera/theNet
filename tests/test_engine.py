@@ -3,6 +3,8 @@ from src.gamma import create_convergence
 from src.genesis import create_genesis
 from src.proposal import create_proposal
 from src.verification import create_verification
+from src.relational_utility import create_relational_utility
+from src.resource_state import create_resource_state
 
 
 STAMP = "2026-09-22T13:00:00Z"
@@ -150,3 +152,27 @@ def test_advance_collectively_requires_explicit_quorum():
     assert len(result.consensus.verifier_ids) == 2
     assert result.state.version == closure.agent_state.version + 1
     assert result.state.singularity_id == "singularity:collective-next"
+
+
+def test_allocate_resources_exposes_self_organizing_pools():
+    from thenet.engine import allocate_resources
+
+    utility = create_relational_utility(
+        "agent:a",
+        1.0,
+        ["evidence:a"],
+        True,
+        STAMP,
+    )
+    memory = create_resource_state(100.0, 20.0, STAMP)
+    compute = create_resource_state(50.0, 10.0, STAMP)
+
+    result = allocate_resources(
+        [utility],
+        memory,
+        compute,
+        {"agent:a": 1.0},
+    )
+
+    assert result.memory[0].allocation == 80.0
+    assert result.compute[0].allocation == 40.0
