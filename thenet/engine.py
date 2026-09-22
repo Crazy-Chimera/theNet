@@ -26,8 +26,9 @@ from src.meaning import Meaning, create_meaning
 from src.omega import OmegaTransition, create_omega_transition
 from src.omega2 import OmegaMemory, create_omega_memory
 from src.omega_credit import OmegaCredit
-from src.omega_credit_allocation import OmegaCreditAllocation, create_omega_credit_allocation
+from src.omega_credit_allocation import OmegaCreditAllocation
 from src.omega_credit_resource_commitment import apply_omega_credit_allocation
+from src.omega_credit_runtime import allocate_omega_credit_resources as _allocate_omega_credit_resources
 from src.omega_credit_engine import (
     OmegaCreditDistribution,
     create_omega_credit_distribution,
@@ -151,7 +152,7 @@ def allocate_omega_credit_resources(
     compute_capacity: float,
 ) -> OmegaCreditAllocation:
     """Allocate memory and compute from an already aggregated Ω-Credit distribution."""
-    return create_omega_credit_allocation(
+    return _allocate_omega_credit_resources(
         distribution, memory_capacity, compute_capacity
     )
 
