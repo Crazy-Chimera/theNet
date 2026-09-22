@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from hashlib import sha256
-from collections.abc import Iterable
 import json
 
 from src.relation import Relation
@@ -14,23 +14,12 @@ from src.relation import Relation
 class PhiStructure:
     id: str
     relation_ids: tuple[str, ...]
-    node_ids: tuple[str, ...]
-    edges: tuple[tuple[str, str], ...] = ()
     version: int = 1
 
 
-def _canonical(
-    relation_ids: tuple[str, ...],
-    node_ids: tuple[str, ...],
-    edges: tuple[tuple[str, str], ...],
-) -> str:
+def _canonical(relation_ids: tuple[str, ...]) -> str:
     return json.dumps(
-        {
-            "edges": edges,
-            "node_ids": node_ids,
-            "relation_ids": relation_ids,
-            "version": 1,
-        },
+        {"relation_ids": relation_ids, "version": 1},
         sort_keys=True,
         separators=(",", ":"),
     )
@@ -43,31 +32,9 @@ def create_phi_structure(relations: Iterable[Relation]) -> PhiStructure:
         raise TypeError("relations must contain only Relation objects")
 
     relation_ids = tuple(sorted({relation.id for relation in items}))
-    node_ids = tuple(
-        sorted(
-            {
-                node_id
-                for relation in items
-                for node_id in (relation.source_id, relation.target_id)
-            }
-        )
-    )
-    edges = tuple(
-        sorted(
-            {
-                (relation.source_id, relation.target_id)
-                for relation in items
-            }
-        )
-    )
-
-    identifier = sha256(
-        _canonical(relation_ids, node_ids, edges).encode("utf-8")
-    ).hexdigest()
+    identifier = sha256(_canonical(relation_ids).encode("utf-8")).hexdigest()
 
     return PhiStructure(
         id=identifier,
         relation_ids=relation_ids,
-        node_ids=node_ids,
-        edges=edges,
     )
