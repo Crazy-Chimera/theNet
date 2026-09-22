@@ -10,6 +10,7 @@ from src.agent_state import AgentState, create_agent_state
 from src.collective_evolution import CollectiveEvolution, evolve_collectively
 from src.genesis import GenesisState, create_genesis
 from src.genesis_verification_gate import evaluate_genesis_verification
+from src.genesis_bootstrap_policy import derive_genesis_bootstrap_policy
 from src.proposal import Proposal, create_proposal
 from src.verification import Verification, create_verification
 
@@ -123,4 +124,22 @@ def simulate_genesis_proposal(
         committed_state_id=result.state.id,
         initial_version=proposer_state.version,
         committed_version=result.state.version,
+    )
+
+
+def simulate_genesis_bootstrap(
+    population_size: int,
+    proposal_text: str,
+    created_at: str,
+) -> GenesisSimulation:
+    """Run Genesis proposal evolution using the derived bootstrap quorum."""
+    policy = derive_genesis_bootstrap_policy(population_size)
+    if not policy.collective_learning_possible:
+        raise ValueError("Genesis bootstrap requires at least one independent verifier")
+
+    return simulate_genesis_proposal(
+        population_size=population_size,
+        quorum=policy.quorum,
+        proposal_text=proposal_text,
+        created_at=created_at,
     )
