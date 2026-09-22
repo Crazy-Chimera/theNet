@@ -64,10 +64,11 @@ def test_verified_evolution_persists_contribution_before_allocation():
         compute_capacity=50.0,
     )
 
-    assert evolution.commit.id in {
-        evolution.commit.id
-    }
-    assert ledger.totals[0][0] == proposer.id
+    assert evolution.commit.previous_state_id == state.id
+    assert evolution.state.version == state.version + 1
+    totals = dict(ledger.totals)
+    assert totals[proposer.id] == pytest.approx(first.credit + second.credit)
+    assert totals[verifier.id] == pytest.approx(verifier_credit.credit)
     assert distribution.total_credit == pytest.approx(
         first.credit + second.credit + verifier_credit.credit
     )
