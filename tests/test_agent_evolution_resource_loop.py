@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from thenet.engine import (
     advance_collectively,
     commit_self_organizing_resources_from_phi,
@@ -48,20 +46,20 @@ def test_verified_evolution_can_feed_self_organizing_resource_flow():
     )
 
     assert evolution.consensus.reached is True
-    assert evolution.commit.current_state_id == state.id
+    assert evolution.commit.previous_state_id == state.id
     assert evolution.state.id != state.id
     assert evolution.state.version == state.version + 1
 
     relation = create_relation(agent.id, verifier.id, "supports", STAMP)
     phi = create_phi([relation])
 
-    utility = create_memory(
-        evolution.commit.id,
+    memory = create_memory(
         agent.id,
+        evolution.commit.id,
         "verified-learning",
         STAMP,
     )
-    assert utility.provenance_id == evolution.commit.id
+    assert memory.source_id == evolution.commit.id
 
     memory_resource = create_resource_state(100.0, 0.0, STAMP)
     compute_resource = create_resource_state(100.0, 0.0, STAMP)
@@ -70,7 +68,7 @@ def test_verified_evolution_can_feed_self_organizing_resource_flow():
         [
             _relational_utility(
                 contributor_id=agent.id,
-                evidence_id=utility.id,
+                evidence_id=memory.id,
             )
         ],
         memory_resource,
