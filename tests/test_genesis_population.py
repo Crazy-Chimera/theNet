@@ -78,3 +78,27 @@ def test_invalid_inputs_are_rejected():
             quorum=1,
             created_at="2026-09-22T00:00:01Z",
         )
+
+    with pytest.raises(ValueError, match="positive integer"):
+        simulate_genesis_proposal(
+            population,
+            "invalid quorum",
+            quorum=0,
+            created_at="2026-09-22T00:00:01Z",
+        )
+
+    with pytest.raises(ValueError, match="positive integer"):
+        simulate_genesis_proposal(
+            population,
+            "invalid quorum",
+            quorum=True,
+            created_at="2026-09-22T00:00:01Z",
+        )
+
+    with pytest.raises(ValueError, match="created_at"):
+        simulate_genesis_proposal(
+            population,
+            "invalid timestamp",
+            quorum=1,
+            created_at="",
+        )
