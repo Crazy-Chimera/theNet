@@ -1,5 +1,6 @@
 import pytest
 
+from src.genesis import create_genesis
 from src.genesis_simulation import GenesisSimulation, simulate_genesis_proposal
 from thenet.engine import simulate_genesis_agents
 
@@ -16,7 +17,7 @@ def test_genesis_simulation_reaches_explicit_quorum():
     )
 
     assert isinstance(result, GenesisSimulation)
-    assert result.proposer_id == "agent-1"
+    assert result.proposer_id == create_genesis("agent-1", STAMP).id
     assert len(result.verifier_ids) == 2
     assert len(set(result.verifier_ids)) == 2
     assert result.committed_version == result.initial_version + 1
