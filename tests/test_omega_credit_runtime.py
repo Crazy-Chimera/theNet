@@ -16,8 +16,8 @@ STAMP = "2026-09-22T14:00:00Z"
 def test_runtime_facade_delegates_canonical_allocation():
     distribution = create_omega_credit_distribution(
         [
-            create_omega_credit("agent:a", 2.0, "evidence:a", STAMP),
-            create_omega_credit("agent:b", 1.0, "evidence:b", STAMP),
+            create_omega_credit("agent:a", 1.0, 1.0, 1.0, True, STAMP),
+            create_omega_credit("agent:b", 1.0, 0.5, 1.0, True, STAMP),
         ]
     )
 
@@ -36,7 +36,7 @@ def test_runtime_facade_delegates_canonical_allocation():
 
 def test_runtime_facade_is_deterministic():
     distribution = create_omega_credit_distribution(
-        [create_omega_credit("agent:a", 1.0, "evidence:a", STAMP)]
+        [create_omega_credit("agent:a", 1.0, 1.0, 1.0, True, STAMP)]
     )
 
     first = allocate_omega_credit_resources(distribution, 10.0, 20.0)
@@ -48,7 +48,7 @@ def test_runtime_facade_is_deterministic():
 
 def test_runtime_facade_preserves_validation_boundary():
     distribution = create_omega_credit_distribution(
-        [create_omega_credit("agent:a", 1.0, "evidence:a", STAMP)]
+        [create_omega_credit("agent:a", 1.0, 1.0, 1.0, True, STAMP)]
     )
 
     with pytest.raises(ValueError):
