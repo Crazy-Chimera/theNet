@@ -23,6 +23,12 @@ from src.resonance import Resonance, create_resonance
 from src.self_knowledge import SelfKnowledge, create_self_knowledge
 from src.singularity import Singularity, create_singularity
 from src.verification import Verification, create_verification
+from src.relational_utility import RelationalUtility
+from src.resource_state import ResourceState
+from src.self_organizing_allocation import (
+    SelfOrganizingAllocation,
+    allocate_memory_and_compute,
+)
 
 
 @dataclass(frozen=True)
