@@ -9,10 +9,11 @@ from src.meaning import create_meaning
 from src.omega import create_omega_transition
 from src.phi import create_phi_structure
 from src.proposal import create_proposal
+from src.relation import create_relation
 from src.resonance import create_resonance
 from src.rho import create_rho
-from src.sigma import create_essence as create_sigma
 from src.self_knowledge import create_self_knowledge
+from src.sigma import create_essence as create_sigma
 
 
 STAMP = "2026-09-22T00:00:00Z"
@@ -22,9 +23,7 @@ def test_architecture_integrates_genesis_to_agent_state():
     alice = create_genesis("alice", STAMP)
     bob = create_genesis("bob", STAMP)
 
-    relation = __import__("src.relation", fromlist=["create_relation"]).create_relation(
-        alice.id, bob.id, "collaborates", STAMP
-    )
+    relation = create_relation(alice.id, bob.id, "collaborates", STAMP)
     phi = create_phi_structure([relation])
     omega = create_omega_transition(alice.id, bob.id, "verified transition", STAMP)
     memory = create_memory(alice.id, omega.id, "transition", STAMP)
@@ -70,9 +69,7 @@ def test_architecture_integrates_genesis_to_agent_state():
 def test_architecture_is_deterministic_for_same_inputs():
     a = create_genesis("alice", STAMP)
     b = create_genesis("bob", STAMP)
-    relation = __import__("src.relation", fromlist=["create_relation"]).create_relation(
-        a.id, b.id, "collaborates", STAMP
-    )
+    relation = create_relation(a.id, b.id, "collaborates", STAMP)
     phi = create_phi_structure([relation])
     sigma = create_essence([relation.id])
 
