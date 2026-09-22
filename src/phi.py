@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 import json
+from typing import Iterable
 
 
 @dataclass(frozen=True)
@@ -46,9 +47,15 @@ def create_phi_structure(
 
     node_count = len(nodes)
     possible_relations = node_count * (node_count - 1)
-    density = min(1.0, len(relations) / possible_relations) if possible_relations else 0.0
+    density = (
+        min(1.0, len(relations) / possible_relations)
+        if possible_relations
+        else 0.0
+    )
 
-    identifier = sha256(_canonical(nodes, relations).encode("utf-8")).hexdigest()
+    identifier = sha256(
+        _canonical(nodes, relations).encode("utf-8")
+    ).hexdigest()
 
     return PhiStructure(
         id=identifier,
@@ -56,3 +63,33 @@ def create_phi_structure(
         relation_ids=relations,
         density=density,
     )
+
+
+def create_phi(relations: Iterable[object]) -> PhiStructure:
+    """Build Φ directly from theNet Relation objects.
+
+    This adapter keeps the structural primitive independent of the Relation
+    implementation while providing the integration API used by the closure.
+    """
+    relation_list = tuple(relations)
+    relation_ids: list[str] = []
+    node_ids: set[str] = set()
+
+    for relation in relation_list:
+        relation_id = getattr(relation, "id", None)
+        source_id = getattr(relation, "source_id", None)
+        target_id = getattr(relation, "target_id", None)
+
+        if not all(
+            isinstance(value, str) and value.strip()
+            for value in (relation_id, source_id, target_id)
+        ):
+            raise ValueError("relations must expose valid id, source_id, and target_id")
+
+        relation_ids.append(relation_id)
+        node_ids.update((source_id, target_id))
+
+    if not relation_list:
+        raise ValueError("relations must be non-empty")
+
+    return create_phi_structure(tuple(node_ids), relation_ids)
