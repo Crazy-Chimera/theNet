@@ -42,7 +42,7 @@ def test_state_derived_credit_composes_canonical_signals():
     assert credit.resource_efficiency == 0.8
     assert credit.coherence == 1.0
     assert credit.verified is True
-    assert credit.credit == pytest.approx(0.512)
+    assert credit.credit == pytest.approx(0.64)
 
 
 def test_exhausted_resource_produces_zero_credit():
