@@ -5,6 +5,7 @@ from thenet.engine import (
     allocate_resources_from_phi,
     analyze_quorum_capacity,
     build_closure,
+    simulate_genesis_majority_agents,
 )
 from src.gamma import create_convergence
 from src.genesis import create_genesis
@@ -157,3 +158,18 @@ def test_runtime_exposes_genesis_quorum_capacity():
     result = analyze_quorum_capacity(4, 4)
     assert result.available_verifiers == 3
     assert [row.reachable for row in result.rows] == [True, True, True, False]
+
+
+def test_runtime_exposes_genesis_majority_learning():
+    from src.genesis_population import create_genesis_population
+
+    population = create_genesis_population(3, STAMP)
+    result = simulate_genesis_majority_agents(
+        population,
+        ("first", "second"),
+        ("2026-09-22T13:00:01Z", "2026-09-22T13:00:02Z"),
+    )
+
+    assert [step.quorum for step in result.steps] == [2, 2]
+    assert [step.consensus_reached for step in result.steps] == [True, True]
+    assert result.final_state.version == 3
