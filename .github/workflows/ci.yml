@@ -27,7 +27,28 @@ jobs:
       - name: Install package
         run: python -m pip install .
       - name: Runtime smoke test
-        run: python -m thenet
+        env:
+          PORT: "8765"
+        run: |
+          python -m thenet &
+          pid=$!
+          trap 'kill $pid' EXIT
+          python - <<'PY'
+          import json
+          import time
+          from urllib.request import urlopen
+
+          for _ in range(20):
+              try:
+                  with urlopen("http://127.0.0.1:8765/health", timeout=1) as response:
+                      assert response.status == 200
+                      assert json.loads(response.read()) == {"status": "ready"}
+                      break
+              except Exception:
+                  time.sleep(0.25)
+          else:
+              raise SystemExit("runtime health endpoint did not become ready")
+          PY
       - name: Run tests
         # Keep the repository root importable for the primitive modules.
         # The suite is the executable specification for every completed layer.
