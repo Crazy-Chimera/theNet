@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from src.agent_state import AgentState, create_agent_state
 from src.collective_evolution import CollectiveEvolution, evolve_collectively
 from src.genesis import create_genesis
+from src.genesis_bootstrap_policy import derive_genesis_bootstrap_policy
 from src.proposal import Proposal, create_proposal
 from src.singularity import create_singularity
 from src.verification import Verification, create_verification
@@ -56,7 +57,6 @@ def create_genesis_population(size: int, created_at: str) -> GenesisPopulation:
 def simulate_genesis_proposal(
     population: GenesisPopulation,
     proposal_text: str,
-    quorum: int,
     created_at: str,
 ) -> GenesisProposalRun:
     if not isinstance(population, GenesisPopulation):
@@ -65,11 +65,10 @@ def simulate_genesis_proposal(
         raise ValueError("population must contain agents")
     if not isinstance(proposal_text, str) or not proposal_text.strip():
         raise ValueError("proposal_text must be non-empty")
-    if not isinstance(quorum, int) or isinstance(quorum, bool) or quorum < 1:
-        raise ValueError("quorum must be a positive integer")
     if not isinstance(created_at, str) or not created_at.strip():
         raise ValueError("created_at must be non-empty")
 
+    policy = derive_genesis_bootstrap_policy(len(population.agents))
     proposer = population.agents[0]
     proposal = create_proposal(
         proposer.subject_id,
@@ -89,8 +88,7 @@ def simulate_genesis_proposal(
         for verifier in population.agents[1:]
     )
 
-    available = len(verifications)
-    quorum_reached = available >= quorum
+    quorum_reached = policy.quorum > 0 and len(verifications) >= policy.quorum
     evolution = None
 
     if quorum_reached:
@@ -98,7 +96,7 @@ def simulate_genesis_proposal(
             proposer,
             proposal,
             verifications,
-            quorum,
+            policy.quorum,
             new_singularity_id=f"evolved:{proposal.id}",
             created_at=created_at,
         )
