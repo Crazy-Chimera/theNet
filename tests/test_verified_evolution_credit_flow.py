@@ -8,7 +8,9 @@ from src.genesis import create_genesis
 from src.omega_credit import create_omega_credit
 from src.omega_credit_allocation import create_omega_credit_allocation
 from src.omega_credit_engine import create_omega_credit_distribution_from_ledger
+from src.omega_credit_self_organizing_commitment import commit_ledger_backed_allocation
 from src.proposal import create_proposal
+from src.resource_state import create_resource_state
 from src.verification import create_verification
 from src.contribution_ledger import create_contribution_ledger
 
@@ -63,6 +65,14 @@ def test_verified_evolution_persists_contribution_before_allocation():
         memory_capacity=100.0,
         compute_capacity=50.0,
     )
+    next_memory, next_compute = commit_ledger_backed_allocation(
+        ledger,
+        create_resource_state(100.0, 0.0, STAMP),
+        create_resource_state(50.0, 0.0, STAMP),
+        memory_capacity=100.0,
+        compute_capacity=50.0,
+        created_at="2026-09-22T17:47:00Z",
+    )
 
     assert evolution.commit.previous_state_id == state.id
     assert evolution.state.version == state.version + 1
@@ -75,3 +85,5 @@ def test_verified_evolution_persists_contribution_before_allocation():
     assert sum(share for _, _, share in distribution.contributions) == pytest.approx(1.0)
     assert sum(value for _, value in allocation.memory_by_contributor) == pytest.approx(100.0)
     assert sum(value for _, value in allocation.compute_by_contributor) == pytest.approx(50.0)
+    assert next_memory.used == pytest.approx(100.0)
+    assert next_compute.used == pytest.approx(50.0)
