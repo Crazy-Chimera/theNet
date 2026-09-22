@@ -17,10 +17,8 @@ def test_genesis_simulation_reaches_explicit_quorum():
 
     assert isinstance(result, GenesisSimulation)
     assert result.proposer_id == "agent-1"
-    assert result.verifier_ids == (
-        result.verifier_ids[0],
-        result.verifier_ids[1],
-    )
+    assert len(result.verifier_ids) == 2
+    assert len(set(result.verifier_ids)) == 2
     assert result.committed_version == result.initial_version + 1
     assert result.initial_state_id != result.committed_state_id
 
