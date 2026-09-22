@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from src.phi import create_phi_structure
+from src.phi import create_phi, create_phi_structure
 
 
 def test_phi_structure_creation():
