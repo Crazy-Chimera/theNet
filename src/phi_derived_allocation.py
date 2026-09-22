@@ -14,13 +14,11 @@ from src.self_organizing_allocation import (
 from src.structure import PhiStructure
 
 
-def allocate_memory_and_compute_from_phi(
+def derive_phi_coherence(
     utilities: list[RelationalUtility],
-    memory_resource: ResourceState,
-    compute_resource: ResourceState,
     structures_by_contributor: Mapping[str, PhiStructure],
-) -> SelfOrganizingAllocation:
-    """Derive contributor coherence from Φ before allocating Ω-Credit."""
+) -> dict[str, float]:
+    """Derive deterministic Φ coherence for each contribution."""
     utility_records = tuple(utilities)
     coherence_by_contributor: dict[str, float] = {}
 
@@ -36,9 +34,31 @@ def allocate_memory_and_compute_from_phi(
 
         coherence_by_contributor[utility.contributor_id] = phi_coherence(structure)
 
+    return coherence_by_contributor
+
+
+def allocate_memory_and_compute_from_phi(
+    utilities: list[RelationalUtility],
+    memory_resource: ResourceState,
+    compute_resource: ResourceState,
+    structures_by_contributor: Mapping[str, PhiStructure],
+) -> SelfOrganizingAllocation:
+    """Derive contributor coherence from Φ before allocating Ω-Credit."""
+    utility_records = tuple(utilities)
+    coherence_by_contributor = derive_phi_coherence(
+        utility_records,
+        structures_by_contributor,
+    )
+
     return allocate_memory_and_compute(
         utility_records,
         memory_resource,
         compute_resource,
         coherence_by_contributor,
     )
+
+
+__all__ = [
+    "allocate_memory_and_compute_from_phi",
+    "derive_phi_coherence",
+]
