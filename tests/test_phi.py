@@ -46,7 +46,7 @@ def test_phi_rejects_invalid_relation_fields():
         source_id = ""
         target_id = "target"
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         create_phi([Invalid()])
 
 
