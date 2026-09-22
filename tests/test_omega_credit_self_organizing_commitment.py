@@ -115,12 +115,14 @@ def test_changed_contribution_changes_next_state():
         {"a": 1.0, "b": 1.0},
         "2026-09-22T12:01:00Z",
     )
-    skewed = commit_self_organizing_allocation(
+    zero_credit = commit_self_organizing_allocation(
         utilities,
         memory,
         compute,
-        {"a": 1.0, "b": 0.5},
+        {"a": 0.0, "b": 0.0},
         "2026-09-22T12:01:00Z",
     )
 
-    assert equal != skewed
+    assert equal != zero_credit
+    assert zero_credit[0].used == memory.used
+    assert zero_credit[1].used == compute.used
