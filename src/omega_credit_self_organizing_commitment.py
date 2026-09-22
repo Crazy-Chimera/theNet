@@ -6,6 +6,7 @@ from hashlib import sha256
 import json
 
 from src.contribution_ledger import ContributionLedger
+from src.execution_ledger import ExecutionRecord, create_execution_record
 from src.omega_credit_allocation import (
     OmegaCreditAllocation,
     create_omega_credit_allocation,
@@ -71,6 +72,22 @@ def commit_self_organizing_allocation(
     )
 
 
+def _derive_ledger_backed_allocation(
+    ledger: ContributionLedger,
+    memory_capacity: float,
+    compute_capacity: float,
+) -> OmegaCreditAllocation:
+    if not isinstance(ledger, ContributionLedger):
+        raise TypeError("ledger must be a ContributionLedger")
+
+    distribution = create_omega_credit_distribution_from_ledger(ledger)
+    return create_omega_credit_allocation(
+        distribution,
+        memory_capacity,
+        compute_capacity,
+    )
+
+
 def commit_ledger_backed_allocation(
     ledger: ContributionLedger,
     memory_resource: ResourceState,
@@ -80,12 +97,8 @@ def commit_ledger_backed_allocation(
     created_at: str,
 ) -> tuple[ResourceState, ResourceState]:
     """Commit resource use from one canonical persistent contribution history."""
-    if not isinstance(ledger, ContributionLedger):
-        raise TypeError("ledger must be a ContributionLedger")
-
-    distribution = create_omega_credit_distribution_from_ledger(ledger)
-    allocation = create_omega_credit_allocation(
-        distribution,
+    allocation = _derive_ledger_backed_allocation(
+        ledger,
         memory_capacity,
         compute_capacity,
     )
@@ -98,7 +111,45 @@ def commit_ledger_backed_allocation(
     )
 
 
+def commit_ledger_backed_allocation_with_record(
+    ledger: ContributionLedger,
+    memory_resource: ResourceState,
+    compute_resource: ResourceState,
+    memory_capacity: float,
+    compute_capacity: float,
+    created_at: str,
+) -> tuple[ResourceState, ResourceState, ExecutionRecord]:
+    """Commit resources and return the immutable provenance record for that transition."""
+    allocation = _derive_ledger_backed_allocation(
+        ledger,
+        memory_capacity,
+        compute_capacity,
+    )
+
+    memory_after, compute_after = apply_omega_credit_allocation(
+        allocation,
+        memory_resource,
+        compute_resource,
+        created_at,
+    )
+
+    record = create_execution_record(
+        contribution_ledger_id=ledger.id,
+        allocation_id=allocation.id,
+        memory_before_id=memory_resource.id,
+        memory_after_id=memory_after.id,
+        compute_before_id=compute_resource.id,
+        compute_after_id=compute_after.id,
+        memory_by_contributor=allocation.memory_by_contributor,
+        compute_by_contributor=allocation.compute_by_contributor,
+        created_at=created_at,
+    )
+
+    return memory_after, compute_after, record
+
+
 __all__ = [
     "commit_ledger_backed_allocation",
+    "commit_ledger_backed_allocation_with_record",
     "commit_self_organizing_allocation",
 ]
