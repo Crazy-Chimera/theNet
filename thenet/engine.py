@@ -14,7 +14,11 @@ from src.expression import Expression, create_expression
 from src.gamma import Convergence, create_convergence
 from src.genesis import GenesisState, create_genesis
 from src.genesis_quorum_analysis import GenesisQuorumAnalysis, analyze_genesis_quorum
-from src.genesis_simulation import GenesisSimulation, simulate_genesis_proposal
+from src.genesis_simulation import (
+    GenesisSimulation,
+    simulate_genesis_bootstrap,
+    simulate_genesis_proposal,
+)
 from src.meaning import Meaning, create_meaning
 from src.omega import OmegaTransition, create_omega_transition
 from src.omega2 import OmegaMemory, create_omega_memory
@@ -183,3 +187,12 @@ def analyze_quorum_capacity(
 ) -> GenesisQuorumAnalysis:
     """Expose Genesis verifier-capacity analysis through the runtime facade."""
     return analyze_genesis_quorum(population_size, max_quorum)
+
+
+def simulate_genesis_bootstrap_agents(
+    population_size: int,
+    proposal_text: str,
+    created_at: str,
+) -> GenesisSimulation:
+    """Run Genesis simulation using the derived bootstrap quorum policy."""
+    return simulate_genesis_bootstrap(population_size, proposal_text, created_at)
