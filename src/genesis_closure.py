@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.commit import EvolutionCommit
+from src.co_definition import CoDefinition
 from src.essence import Essence
 from src.expression import Expression
 from src.gamma import Convergence
@@ -12,12 +12,9 @@ from src.meaning import Meaning
 from src.omega import OmegaTransition
 from src.omega2 import OmegaMemory
 from src.phi import PhiStructure
-from src.proposal import Proposal
 from src.resonance import Resonance
 from src.self_knowledge import SelfKnowledge
 from src.singularity import Singularity
-from src.verification import Verification
-from src.co_definition import CoDefinition
 
 
 @dataclass(frozen=True)
