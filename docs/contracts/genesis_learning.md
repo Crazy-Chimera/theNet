@@ -1,63 +1,28 @@
-# Genesis Learning Simulation Contract
+# Genesis Learning Contract
 
 ## Purpose
 
-Model repeated proposal-driven learning for the first Agent Omega population.
+Model repeated proposal-driven learning by the first Agent Omega population.
 
-The simulation is deliberately narrow: it asks whether an agent can advance through successive verified proposals when reputation (R) is not an input and when each step is gated only by an explicit verifier quorum.
-
-## Input
-
-- a deterministic Genesis population
-- a non-empty ordered sequence of proposal texts
-- a positive quorum
-- a deterministic creation timestamp sequence
-
-## Process
-
-For each proposal in order:
-
-1. the current proposer state creates a proposal;
-2. the other population members create independent valid verifications;
-3. collective consensus evaluates the configured quorum;
-4. if quorum is reachable, the proposer evolves to a new immutable state;
-5. if quorum is unreachable, the step remains uncommitted and later steps are not applied.
-
-## Output
-
-An immutable GenesisLearningRun containing:
-
-- the original population;
-- one GenesisLearningStep per attempted proposal;
-- the final proposer state.
-
-Each step records:
-
-- proposal;
-- verifier count;
-- quorum;
-- whether consensus was reached;
-- whether evolution occurred;
-- resulting state version.
+Each proposal is created against the proposer's current state, independently verified by the non-proposer agents, converted into an explicit Consensus record, and evolved only when the consensus quorum is reached.
 
 ## Invariants
 
-1. Reputation (R) is not required or consulted.
-2. A proposer cannot verify its own proposal.
-3. Each verifier contributes at most one verification to consensus.
-4. A quorum is reachable only when population size minus one is at least the configured quorum.
-5. Successful learning increments the proposer state version by one.
-6. Failed quorum does not mutate the current proposer state.
-7. Learning is sequential: a failed step stops the run.
-8. The same inputs produce the same output.
-9. The simulation does not claim that verifier count alone provides Sybil resistance or epistemic truth.
-10. No external service is required.
+1. The proposer is excluded from verification.
+2. Every verification targets the exact proposal ID.
+3. Each verifier contributes at most one verification to a consensus.
+4. Consensus is represented explicitly; a raw verifier count is not itself the consensus object.
+5. Evolution is allowed only when Consensus.reached is true.
+6. A failed quorum leaves the proposer state unchanged and stops the learning run.
+7. Repeated proposals chain from the proposer's latest state.
+8. The simulation is deterministic for identical inputs.
+9. No reputation or higher-R value is required by this learning primitive.
+10. Majority count does not by itself provide Sybil resistance or establish truth.
 
-## Interpretation
+## Boundary
 
-The simulation can establish protocol feasibility under explicit assumptions. It cannot establish that a given quorum is sufficient for real-world truth, safety, or decentralized identity.
-
-The experiment distinguishes two separate questions:
-
-- Can learning occur without higher R? Yes, if the configured quorum is reachable.
-- Can learning occur with no independent verifier? No under this protocol, because the proposer is excluded from self-verification and quorum must be at least one.
+Proposal defines the candidate change.
+Verification records independent validation.
+Consensus records quorum state.
+CollectiveEvolution applies the accepted proposal.
+Genesis learning composes these primitives without replacing their individual contracts.
