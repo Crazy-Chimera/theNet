@@ -32,6 +32,33 @@ def _remaining(resource: ResourceState) -> float:
     return max(resource.available - resource.used, 0.0)
 
 
+def _credits(
+    utilities: Iterable[RelationalUtility],
+    resource_efficiency: float,
+    coherence_by_contributor: Mapping[str, float],
+):
+    result = []
+    for utility in utilities:
+        if not isinstance(utility, RelationalUtility):
+            raise TypeError("utilities must contain RelationalUtility values")
+        if utility.contributor_id not in coherence_by_contributor:
+            raise ValueError(
+                f"missing Φ coherence for contributor {utility.contributor_id}"
+            )
+        coherence = _validate_coherence(
+            coherence_by_contributor[utility.contributor_id]
+        )
+        result.append(
+            create_omega_credit_from_utility(
+                utility,
+                resource_efficiency=resource_efficiency,
+                coherence=coherence,
+                created_at=utility.created_at,
+            )
+        )
+    return result
+
+
 def allocate_memory_and_compute(
     utilities: Iterable[RelationalUtility],
     memory_resource: ResourceState,
@@ -43,27 +70,19 @@ def allocate_memory_and_compute(
     if not isinstance(compute_resource, ResourceState):
         raise TypeError("compute_resource must be ResourceState")
 
-    credits = []
-    for utility in utilities:
-        if not isinstance(utility, RelationalUtility):
-            raise TypeError("utilities must contain RelationalUtility values")
-        if utility.contributor_id not in coherence_by_contributor:
-            raise ValueError(
-                f"missing Φ coherence for contributor {utility.contributor_id}"
-            )
-        coherence = _validate_coherence(
-            coherence_by_contributor[utility.contributor_id]
-        )
-        credits.append(
-            create_omega_credit_from_utility(
-                utility,
-                resource_efficiency=memory_resource.efficiency,
-                coherence=coherence,
-                created_at=utility.created_at,
-            )
-        )
+    utility_records = tuple(utilities)
+    memory_credits = _credits(
+        utility_records,
+        memory_resource.efficiency,
+        coherence_by_contributor,
+    )
+    compute_credits = _credits(
+        utility_records,
+        compute_resource.efficiency,
+        coherence_by_contributor,
+    )
 
     return SelfOrganizingAllocation(
-        memory=allocate_credit(credits, _remaining(memory_resource)),
-        compute=allocate_credit(credits, _remaining(compute_resource)),
+        memory=allocate_credit(memory_credits, _remaining(memory_resource)),
+        compute=allocate_credit(compute_credits, _remaining(compute_resource)),
     )
