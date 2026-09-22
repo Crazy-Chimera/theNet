@@ -6,7 +6,7 @@ from src.genesis_simulation import (
     simulate_genesis_bootstrap,
     simulate_genesis_proposal,
 )
-from thenet.engine import simulate_genesis_agents
+from thenet.engine import simulate_genesis_agents, simulate_genesis_bootstrap_agents
 
 
 STAMP = "2026-09-22T00:00:00Z"
@@ -90,3 +90,10 @@ def test_genesis_bootstrap_is_deterministic():
     second = simulate_genesis_bootstrap(5, "bootstrap proposal", STAMP)
 
     assert first == second
+
+
+def test_runtime_facade_exposes_policy_bound_bootstrap():
+    direct = simulate_genesis_bootstrap(5, "bootstrap proposal", STAMP)
+    facade = simulate_genesis_bootstrap_agents(5, "bootstrap proposal", STAMP)
+
+    assert facade == direct
