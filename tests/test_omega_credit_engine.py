@@ -2,10 +2,12 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
+from src.contribution_ledger import create_contribution_ledger
 from src.omega_credit import create_omega_credit
 from src.omega_credit_engine import (
     OmegaCreditDistribution,
     create_omega_credit_distribution,
+    create_omega_credit_distribution_from_ledger,
 )
 
 
@@ -81,3 +83,23 @@ def test_distribution_identity_is_deterministic():
     second = create_omega_credit_distribution(credits)
 
     assert first.id == second.id
+
+
+def test_ledger_distribution_aggregates_repeated_contributor_records():
+    first = credit("a", 0.2)
+    second = credit("a", 0.3)
+    third = credit("b", 0.5)
+
+    ledger = create_contribution_ledger([third, first, second])
+    state = create_omega_credit_distribution_from_ledger(ledger)
+
+    assert state.total_credit == pytest.approx(1.0)
+    assert state.contributions == (
+        ("a", 0.5, 0.5),
+        ("b", 0.5, 0.5),
+    )
+
+
+def test_ledger_distribution_rejects_invalid_input():
+    with pytest.raises(TypeError):
+        create_omega_credit_distribution_from_ledger(object())
