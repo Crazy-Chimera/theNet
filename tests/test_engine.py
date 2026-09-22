@@ -176,3 +176,12 @@ def test_allocate_resources_exposes_self_organizing_pools():
 
     assert result.memory[0].allocation == 80.0
     assert result.compute[0].allocation == 40.0
+
+
+def test_runtime_exposes_genesis_quorum_capacity():
+    from thenet.engine import analyze_quorum_capacity
+
+    result = analyze_quorum_capacity(4, 4)
+
+    assert result.available_verifiers == 3
+    assert [row.reachable for row in result.rows] == [True, True, True, False]
