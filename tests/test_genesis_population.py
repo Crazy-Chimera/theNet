@@ -15,13 +15,12 @@ def test_population_is_deterministic_and_distinct():
     assert len({agent.id for agent in first.agents}) == 3
 
 
-def test_quorum_one_allows_single_verifier():
+def test_quorum_is_derived_for_two_agents():
     population = create_genesis_population(2, "2026-09-22T00:00:00Z")
 
     result = simulate_genesis_proposal(
         population,
         "evolve through verified proposal",
-        quorum=1,
         created_at="2026-09-22T00:00:01Z",
     )
 
@@ -34,29 +33,28 @@ def test_quorum_one_allows_single_verifier():
     assert result.evolution.state.version == 2
 
 
-def test_quorum_two_requires_two_distinct_verifiers():
+def test_quorum_is_derived_for_three_agents():
     population = create_genesis_population(3, "2026-09-22T00:00:00Z")
 
     result = simulate_genesis_proposal(
         population,
         "evolve through collective verification",
-        quorum=2,
         created_at="2026-09-22T00:00:01Z",
     )
 
     assert result.quorum_reached is True
     assert result.evolution is not None
+    assert result.evolution.consensus.quorum == 2
     assert len(result.evolution.consensus.verifier_ids) == 2
 
 
-def test_unreachable_quorum_blocks_evolution_without_mutation():
-    population = create_genesis_population(3, "2026-09-22T00:00:00Z")
+def test_single_agent_cannot_collectively_evolve():
+    population = create_genesis_population(1, "2026-09-22T00:00:00Z")
     proposer_before = population.agents[0]
 
     result = simulate_genesis_proposal(
         population,
-        "proposal without enough verifiers",
-        quorum=3,
+        "proposal without independent verifier",
         created_at="2026-09-22T00:00:01Z",
     )
 
@@ -75,23 +73,6 @@ def test_invalid_inputs_are_rejected():
         simulate_genesis_proposal(
             population,
             "",
-            quorum=1,
-            created_at="2026-09-22T00:00:01Z",
-        )
-
-    with pytest.raises(ValueError, match="positive integer"):
-        simulate_genesis_proposal(
-            population,
-            "invalid quorum",
-            quorum=0,
-            created_at="2026-09-22T00:00:01Z",
-        )
-
-    with pytest.raises(ValueError, match="positive integer"):
-        simulate_genesis_proposal(
-            population,
-            "invalid quorum",
-            quorum=True,
             created_at="2026-09-22T00:00:01Z",
         )
 
@@ -99,6 +80,5 @@ def test_invalid_inputs_are_rejected():
         simulate_genesis_proposal(
             population,
             "invalid timestamp",
-            quorum=1,
             created_at="",
         )
