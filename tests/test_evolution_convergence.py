@@ -2,13 +2,16 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from src.collective_evolution import create_collective_evolution
+from src.agent_state import create_agent_state
+from src.collective_evolution import evolve_collectively
 from src.evolution_convergence import EvolutionConvergence, create_evolution_convergence
 from src.evolution_memory import record_verified_evolution_memory
 from src.evolution_resonance import create_evolution_resonance
+from src.proposal import create_proposal
+from src.relation import create_relation
 from src.resonance import Resonance
 from src.structure import create_phi_structure
-from src.relation import create_relation
+from src.verification import create_verification
 
 
 STAMP = "2026-09-22T00:10:00Z"
@@ -17,9 +20,18 @@ STAMP = "2026-09-22T00:10:00Z"
 def make_context():
     relation = create_relation("agent-a", "agent-b", "connect", STAMP)
     structure = create_phi_structure([relation])
-    evolution = create_collective_evolution(
-        proposals=["proposal-a"],
-        selected_proposal="proposal-a",
+    state = create_agent_state("agent-a", "singularity-a", STAMP)
+    proposal = create_proposal(state.subject_id, state.id, "proposal-a", STAMP)
+    verifications = [
+        create_verification(proposal.id, "verifier-1", "evidence-1", True, STAMP),
+        create_verification(proposal.id, "verifier-2", "evidence-2", True, STAMP),
+    ]
+    evolution = evolve_collectively(
+        current_state=state,
+        proposal=proposal,
+        verifications=verifications,
+        quorum=2,
+        new_singularity_id="singularity-b",
         created_at=STAMP,
     )
     memory = record_verified_evolution_memory(evolution, "agent-a", STAMP)
