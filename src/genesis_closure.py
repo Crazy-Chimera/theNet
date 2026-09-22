@@ -27,7 +27,7 @@ class GenesisClosure:
     pi: Meaning
     psi: Expression
     theta: SelfKnowledge
-    rho: CoDefinition
+    rho: RelationalCoDefinition
     sigma: Essence
     iota: Singularity
 
