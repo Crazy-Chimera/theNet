@@ -46,6 +46,16 @@ Inputs:
 
 Produces the next immutable AgentState only after explicit verifier quorum.
 
+### allocate_omega_credit_resources
+
+Inputs:
+
+- aggregated OmegaCreditDistribution
+- memory capacity
+- compute capacity
+
+Produces a deterministic immutable OmegaCreditAllocation through the canonical Ω-Credit allocation primitive.
+
 ### allocate_resources
 
 Inputs:
