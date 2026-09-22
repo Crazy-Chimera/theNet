@@ -35,7 +35,14 @@ def evolve_collectively(
     if not isinstance(proposal, Proposal):
         raise ValueError("proposal must be Proposal")
 
-    consensus = create_consensus(proposal.id, verifications, quorum)
+    if proposal.proposer_id != current_state.subject_id:
+        raise ValueError("proposal proposer must match current_state subject")
+
+    records = tuple(verifications)
+    if any(verification.verifier_id == proposal.proposer_id for verification in records):
+        raise ValueError("proposer cannot verify its own proposal")
+
+    consensus = create_consensus(proposal.id, records, quorum)
     if not consensus.reached:
         raise ValueError("collective quorum has not been reached")
 
