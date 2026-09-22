@@ -66,3 +66,18 @@ def test_phi_does_not_mutate_input_collection():
     create_phi(relations)
 
     assert relations == [relation]
+
+
+def test_public_phi_api_uses_canonical_topology():
+    from src.phi_coherence import phi_coherence
+    from src.structure import PhiStructure
+
+    a = create_genesis("a", "2026-09-22T00:00:00Z")
+    b = create_genesis("b", "2026-09-22T00:00:00Z")
+    relation = create_relation(a.id, b.id, "knows", "2026-09-22T00:01:00Z")
+
+    phi = create_phi([relation])
+
+    assert isinstance(phi, PhiStructure)
+    assert phi.edges == ((a.id, b.id),)
+    assert phi_coherence(phi) == 1.0
