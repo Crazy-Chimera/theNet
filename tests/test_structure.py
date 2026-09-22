@@ -19,6 +19,7 @@ def test_phi_collects_unique_sorted_nodes_and_relations():
     assert isinstance(result, PhiStructure)
     assert result.node_ids == ("a", "b", "c")
     assert result.relation_ids == tuple(sorted((first.id, second.id)))
+    assert result.edges == (("a", "b"), ("b", "c"))
     assert result.version == 1
 
 
