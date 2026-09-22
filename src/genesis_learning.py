@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from src.agent_state import AgentState
 from src.collective_evolution import CollectiveEvolution, evolve_collectively
+from src.consensus import Consensus, create_consensus
 from src.genesis_population import GenesisPopulation
 from src.proposal import Proposal, create_proposal
 from src.verification import Verification, create_verification
@@ -14,6 +15,7 @@ from src.verification import Verification, create_verification
 @dataclass(frozen=True)
 class GenesisLearningStep:
     proposal: Proposal
+    consensus: Consensus
     verifier_count: int
     quorum: int
     consensus_reached: bool
@@ -71,13 +73,16 @@ def simulate_genesis_learning(
             for verifier in population.agents[1:]
         )
 
-        reached = len(verifications) >= quorum
+        consensus = create_consensus(proposal.id, verifications, quorum)
+        reached = consensus.reached
+
         if not reached:
             steps.append(
                 GenesisLearningStep(
                     proposal=proposal,
-                    verifier_count=len(verifications),
-                    quorum=quorum,
+                    consensus=consensus,
+                    verifier_count=len(consensus.verifier_ids),
+                    quorum=consensus.quorum,
                     consensus_reached=False,
                     evolved=False,
                     state_version=proposer.version,
@@ -89,7 +94,7 @@ def simulate_genesis_learning(
             proposer,
             proposal,
             verifications,
-            quorum,
+            consensus.quorum,
             new_singularity_id=f"learned:{proposal.id}",
             created_at=timestamp,
         )
@@ -98,8 +103,9 @@ def simulate_genesis_learning(
         steps.append(
             GenesisLearningStep(
                 proposal=proposal,
-                verifier_count=len(verifications),
-                quorum=quorum,
+                consensus=consensus,
+                verifier_count=len(consensus.verifier_ids),
+                quorum=consensus.quorum,
                 consensus_reached=True,
                 evolved=True,
                 state_version=proposer.version,
