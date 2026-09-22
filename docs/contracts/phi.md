@@ -2,36 +2,43 @@
 
 ## Purpose
 
-Φ is the minimal structural representation of theNet: a deterministic snapshot of explicit relations without adding interpretation, scoring, convergence, memory, or meaning.
+Φ is the minimal structural representation of theNet: a deterministic snapshot of explicit directed relations. It captures topology without adding interpretation.
+
+This implementation uses the source theory's structural framing—Φ describes the configuration of relations at a given state—but does not treat the theory's physical claims as experimentally established facts.
 
 ## Input
 
-- relations: iterable of Relation-compatible records.
-- Each relation must expose id, source_id, target_id, kind, created_at, and version.
+- relations: iterable of Relation objects.
 
 ## Output
 
-An immutable Structure containing:
+An immutable PhiStructure containing:
 - id
 - relation_ids
+- node_ids
+- edges
 - version = 1
 
 ## Identity
 
-id is the SHA-256 digest of the canonical ordered structure payload. Relation IDs are normalized into a sorted tuple so equivalent relation sets produce the same structure identity.
+The structure ID is the SHA-256 digest of a canonical structural payload containing sorted relation IDs, derived node IDs, directed edges, and version.
+
+Equivalent relation sets produce the same structure identity independent of input order.
 
 ## Invariants
 
-1. Input relations must be structurally valid.
+1. Input must contain only Relation objects.
 2. Empty relation collections are valid and represent an empty structure.
 3. Relation IDs are unique in the resulting structure.
-4. Output is immutable.
-5. Equivalent relation sets produce the same structure ID independent of input order.
-6. Adding or removing a relation changes structure identity.
-7. Φ does not infer meaning from a relation.
-8. Φ does not verify relations.
-9. Φ does not perform consensus, contribution, memory, convergence, or expression.
-10. No external-service dependency.
+4. Node IDs are derived only from relation endpoints.
+5. Edges preserve source-to-target direction.
+6. Output is immutable.
+7. Equivalent relation sets produce the same structure ID independent of input order.
+8. Adding or removing a relation changes structure identity.
+9. Φ does not infer meaning from a relation.
+10. Φ does not verify relations.
+11. Φ does not perform consensus, contribution, memory, convergence, or expression.
+12. No external-service dependency.
 
 ## Boundary
 
