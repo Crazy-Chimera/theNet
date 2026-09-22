@@ -35,6 +35,27 @@ def test_applies_allocation_to_each_resource_independently():
     assert next_compute.used == 45.0
 
 
+def test_zero_allocation_preserves_resource_identity():
+    allocation = create_omega_credit_allocation(
+        OmegaCreditDistribution(
+            id="zero",
+            total_credit=0.0,
+            contributions=(),
+        ),
+        80.0,
+        40.0,
+    )
+    memory = create_resource_state(100.0, 10.0, "t0")
+    compute = create_resource_state(50.0, 5.0, "t0")
+
+    next_memory, next_compute = apply_omega_credit_allocation(
+        allocation, memory, compute, "t1"
+    )
+
+    assert next_memory is memory
+    assert next_compute is compute
+
+
 def test_inputs_are_not_mutated():
     allocation = _allocation()
     memory = create_resource_state(100.0, 10.0, "t0")
