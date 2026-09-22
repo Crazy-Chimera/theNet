@@ -68,6 +68,9 @@ def test_unverified_agent_does_not_cross_into_resource_commit():
     memory = create_resource_state(100.0, 0.0, STAMP)
     compute = create_resource_state(100.0, 0.0, STAMP)
 
+    allocation = allocate_resources_from_phi(
+        utilities, memory, compute, structures
+    )
     next_memory, next_compute = commit_self_organizing_resources_from_phi(
         utilities,
         memory,
@@ -76,10 +79,10 @@ def test_unverified_agent_does_not_cross_into_resource_commit():
         "2026-09-22T15:01:00Z",
     )
 
-    assert next_memory.used > 0.0
-    assert next_compute.used > 0.0
-    assert next_memory.used < 100.0
-    assert next_compute.used < 100.0
+    assert allocation.memory_by_contributor == (("agent:a", 100.0),)
+    assert allocation.compute_by_contributor == (("agent:a", 100.0),)
+    assert next_memory.used == pytest.approx(100.0)
+    assert next_compute.used == pytest.approx(100.0)
 
 
 def test_missing_structure_blocks_the_flow():
