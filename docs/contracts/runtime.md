@@ -67,6 +67,26 @@ Inputs:
 
 Produces a deterministic self-organizing memory/compute allocation.
 
+### commit_ledger_backed_resources_with_record
+
+Inputs:
+
+- persistent ContributionLedger
+- memory ResourceState
+- compute ResourceState
+- memory capacity
+- compute capacity
+- creation timestamp
+
+Produces:
+
+- next memory ResourceState;
+- next compute ResourceState;
+- immutable ExecutionRecord linking the contribution ledger, allocation, and before/after resource identities.
+
+This operation exposes provenance without mutating the supplied objects.
+
+
 ### analyze_genesis_quorum
 
 Inputs:
