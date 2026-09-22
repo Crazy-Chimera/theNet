@@ -59,3 +59,15 @@ def test_structural_change_changes_identity():
     first = create_phi_structure(["a", "b"], ["r1"])
     second = create_phi_structure(["a", "b"], ["r2"])
     assert first.id != second.id
+
+
+def test_create_phi_adapts_relations():
+    class Relation:
+        id = "r1"
+        source_id = "a"
+        target_id = "b"
+
+    state = create_phi([Relation()])
+
+    assert state.relation_ids == ("r1",)
+    assert state.node_ids == ("a", "b")
