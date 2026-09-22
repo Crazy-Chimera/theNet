@@ -21,6 +21,17 @@ class Consensus:
     version: int = 1
 
 
+def strict_majority_quorum(eligible_verifiers: int) -> int:
+    """Return the smallest quorum that is strictly greater than half."""
+    if (
+        not isinstance(eligible_verifiers, int)
+        or isinstance(eligible_verifiers, bool)
+        or eligible_verifiers < 1
+    ):
+        raise ValueError("eligible_verifiers must be a positive integer")
+    return eligible_verifiers // 2 + 1
+
+
 def _canonical(
     proposal_id: str,
     verification_ids: tuple[str, ...],
