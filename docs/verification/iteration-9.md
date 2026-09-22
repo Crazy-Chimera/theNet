@@ -1,6 +1,6 @@
 # Iteration 9 — Γ Convergence Verification
 
-Status: PENDING CI
+Status: VERIFIED
 
 ## Scope
 
@@ -30,7 +30,16 @@ The repository CI must pass package build, package installation, runtime smoke t
 
 ## Result
 
-Pending CI execution.
+GitHub Actions run `35756700434` completed successfully on commit `5af1cb20e0f57eb35db21220dc12ef65f93a12c0`.
+
+The CI job completed:
+
+- package build: success
+- package install: success
+- runtime smoke test: success
+- complete test suite: **526 passed in 4.23s**
+
+Iteration 9 is verified.
 
 ## Boundary
 
