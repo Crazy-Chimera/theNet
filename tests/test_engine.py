@@ -1,5 +1,7 @@
 from thenet.engine import advance, build_closure
 from src.gamma import create_convergence
+from src.proposal import create_proposal
+from src.verification import create_verification
 
 
 STAMP = "2026-09-22T13:00:00Z"
@@ -70,12 +72,25 @@ def test_advance_creates_next_immutable_agent_state():
         "expression:1",
         STAMP,
     )
-    convergence = create_convergence([closure.proposal.id])
+    proposal = create_proposal(
+        closure.agent_state.id,
+        closure.agent_state.id,
+        "advance verified agent state",
+        "2026-09-22T13:00:30Z",
+    )
+    verification = create_verification(
+        proposal.id,
+        closure.target.id,
+        "verified next-state evidence",
+        True,
+        "2026-09-22T13:00:40Z",
+    )
+    convergence = create_convergence([proposal.id])
 
     evolved = advance(
         closure.agent_state,
-        closure.proposal,
-        closure.verification,
+        proposal,
+        verification,
         convergence,
         "singularity:next",
         "2026-09-22T13:01:00Z",
