@@ -15,15 +15,18 @@ class PhiStructure:
     id: str
     relation_ids: tuple[str, ...]
     node_ids: tuple[str, ...]
+    edges: tuple[tuple[str, str], ...] = ()
     version: int = 1
 
 
 def _canonical(
     relation_ids: tuple[str, ...],
     node_ids: tuple[str, ...],
+    edges: tuple[tuple[str, str], ...],
 ) -> str:
     return json.dumps(
         {
+            "edges": edges,
             "node_ids": node_ids,
             "relation_ids": relation_ids,
             "version": 1,
@@ -49,13 +52,22 @@ def create_phi_structure(relations: Iterable[Relation]) -> PhiStructure:
             }
         )
     )
+    edges = tuple(
+        sorted(
+            {
+                (relation.source_id, relation.target_id)
+                for relation in items
+            }
+        )
+    )
 
     identifier = sha256(
-        _canonical(relation_ids, node_ids).encode("utf-8")
+        _canonical(relation_ids, node_ids, edges).encode("utf-8")
     ).hexdigest()
 
     return PhiStructure(
         id=identifier,
         relation_ids=relation_ids,
         node_ids=node_ids,
+        edges=edges,
     )
