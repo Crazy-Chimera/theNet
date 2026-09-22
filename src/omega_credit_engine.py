@@ -8,6 +8,7 @@ from collections.abc import Iterable
 import json
 import math
 
+from src.contribution_ledger import ContributionLedger
 from src.omega_credit import OmegaCredit
 
 
@@ -34,32 +35,22 @@ def _canonical(
     )
 
 
-def create_omega_credit_distribution(
-    credits: Iterable[OmegaCredit],
+def _distribution_from_totals(
+    totals: tuple[tuple[str, float], ...],
 ) -> OmegaCreditDistribution:
-    items = tuple(credits)
-
-    if any(not isinstance(item, OmegaCredit) for item in items):
-        raise TypeError("credits must contain only OmegaCredit objects")
-
-    contributors = [item.contributor_id for item in items]
-    if len(contributors) != len(set(contributors)):
-        raise ValueError("each contributor may appear only once")
-
-    total = sum(item.credit for item in items)
+    total = sum(credit for _contributor_id, credit in totals)
     if not math.isfinite(total) or total < 0.0:
         raise ValueError("total credit must be finite and non-negative")
 
-    ordered = sorted(items, key=lambda item: item.contributor_id)
     if total > 0.0:
         contributions = tuple(
-            (item.contributor_id, item.credit, item.credit / total)
-            for item in ordered
+            (contributor_id, credit, credit / total)
+            for contributor_id, credit in totals
         )
     else:
         contributions = tuple(
-            (item.contributor_id, item.credit, 0.0)
-            for item in ordered
+            (contributor_id, credit, 0.0)
+            for contributor_id, credit in totals
         )
 
     identifier = sha256(
@@ -73,7 +64,36 @@ def create_omega_credit_distribution(
     )
 
 
+def create_omega_credit_distribution(
+    credits: Iterable[OmegaCredit],
+) -> OmegaCreditDistribution:
+    items = tuple(credits)
+
+    if any(not isinstance(item, OmegaCredit) for item in items):
+        raise TypeError("credits must contain only OmegaCredit objects")
+
+    contributors = [item.contributor_id for item in items]
+    if len(contributors) != len(set(contributors)):
+        raise ValueError("each contributor may appear only once")
+
+    ordered = sorted(items, key=lambda item: item.contributor_id)
+    return _distribution_from_totals(
+        tuple((item.contributor_id, item.credit) for item in ordered)
+    )
+
+
+def create_omega_credit_distribution_from_ledger(
+    ledger: ContributionLedger,
+) -> OmegaCreditDistribution:
+    """Convert persistent contributor totals into deterministic shares."""
+    if not isinstance(ledger, ContributionLedger):
+        raise TypeError("ledger must be a ContributionLedger")
+
+    return _distribution_from_totals(ledger.totals)
+
+
 __all__ = [
     "OmegaCreditDistribution",
     "create_omega_credit_distribution",
+    "create_omega_credit_distribution_from_ledger",
 ]
