@@ -9,6 +9,7 @@ import json
 from src.agent_state import AgentState, create_agent_state
 from src.collective_evolution import CollectiveEvolution, evolve_collectively
 from src.genesis import GenesisState, create_genesis
+from src.genesis_verification_gate import evaluate_genesis_verification
 from src.proposal import Proposal, create_proposal
 from src.verification import Verification, create_verification
 
@@ -56,8 +57,13 @@ def simulate_genesis_proposal(
         or quorum < 1
     ):
         raise ValueError("quorum must be a positive integer")
-    if population_size < quorum + 1:
-        raise ValueError("population_size must be at least quorum + 1")
+    gate = evaluate_genesis_verification(
+        population_size=population_size,
+        verifier_count=quorum,
+        required_quorum=quorum,
+    )
+    if not gate.approved:
+        raise ValueError("population_size must provide the requested independent quorum")
     if not isinstance(proposal_text, str) or not proposal_text.strip():
         raise ValueError("proposal_text must be non-empty")
     if not isinstance(created_at, str) or not created_at.strip():
