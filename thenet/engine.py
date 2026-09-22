@@ -42,8 +42,13 @@ from src.self_knowledge import SelfKnowledge, create_self_knowledge
 from src.singularity import Singularity, create_singularity
 from src.verification import Verification, create_verification
 from src.relational_utility import RelationalUtility
+from src.contribution_ledger import ContributionLedger
+from src.execution_ledger import ExecutionRecord
 from src.resource_state import ResourceState
-from src.omega_credit_self_organizing_commitment import commit_self_organizing_allocation
+from src.omega_credit_self_organizing_commitment import (
+    commit_ledger_backed_allocation_with_record,
+    commit_self_organizing_allocation,
+)
 from src.omega_credit_phi_resource_commitment import commit_self_organizing_allocation_from_phi
 from src.self_organizing_allocation import (
     SelfOrganizingAllocation,
@@ -174,6 +179,25 @@ def aggregate_omega_credit(
 ) -> OmegaCreditDistribution:
     """Aggregate independently produced Ω-Credit records into contribution shares."""
     return create_omega_credit_distribution(credits)
+
+
+def commit_ledger_backed_resources_with_record(
+    ledger: "ContributionLedger",
+    memory_resource: ResourceState,
+    compute_resource: ResourceState,
+    memory_capacity: float,
+    compute_capacity: float,
+    created_at: str,
+) -> tuple[ResourceState, ResourceState, "ExecutionRecord"]:
+    """Commit ledger-backed resources and expose immutable provenance."""
+    return commit_ledger_backed_allocation_with_record(
+        ledger,
+        memory_resource,
+        compute_resource,
+        memory_capacity,
+        compute_capacity,
+        created_at,
+    )
 
 
 def allocate_resources(
