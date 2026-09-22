@@ -8,16 +8,16 @@ This implementation uses the source theory's structural framing—Φ describes t
 
 ## Input
 
-- relations: iterable of Relation objects.
+- `relations`: iterable of `Relation` objects.
 
 ## Output
 
-An immutable PhiStructure containing:
-- id
-- relation_ids
-- node_ids
-- edges
-- version = 1
+An immutable `PhiStructure` containing:
+- `id`
+- `relation_ids`
+- `node_ids`
+- `edges`
+- `version = 1`
 
 ## Identity
 
@@ -27,14 +27,14 @@ Equivalent relation sets produce the same structure identity independent of inpu
 
 ## Invariants
 
-1. Input must contain only Relation objects.
+1. Input must contain only `Relation` objects.
 2. Empty relation collections are valid and represent an empty structure.
-3. Relation IDs are unique in the resulting structure.
+3. Duplicate relation IDs are canonicalized to one structural relation rather than creating duplicate edges.
 4. Node IDs are derived only from relation endpoints.
 5. Edges preserve source-to-target direction.
 6. Output is immutable.
 7. Equivalent relation sets produce the same structure ID independent of input order.
-8. Adding or removing a relation changes structure identity.
+8. Adding or removing a distinct relation changes structure identity.
 9. Φ does not infer meaning from a relation.
 10. Φ does not verify relations.
 11. Φ does not perform consensus, contribution, memory, convergence, or expression.
