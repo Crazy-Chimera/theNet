@@ -24,6 +24,8 @@ def _apply(
     tolerance = max(1e-12, abs(remaining) * 1e-12)
     if allocated > remaining + tolerance:
         raise ValueError("allocation exceeds remaining resource capacity")
+    if allocated == 0.0:
+        return resource
     return create_resource_state(
         available=resource.available,
         used=resource.used + allocated,
