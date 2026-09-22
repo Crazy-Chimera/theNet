@@ -107,8 +107,16 @@ def test_result_is_immutable():
         item.proposal_id = "other"
 
 
-@pytest.mark.parametrize("index", [1, 5, 8])
-def test_defining_changes_change_identity(index):
+def test_proposal_identity_changes_commit_identity():
+    values = list(BASE)
+    values[1] = "proposal-2"
+    values[7] = "proposal-2"
+
+    assert create_evolution_commit(*values).id != create_evolution_commit(*BASE).id
+
+
+@pytest.mark.parametrize("index", [5, 8])
+def test_other_defining_changes_change_identity(index):
     base = create_evolution_commit(*BASE)
     values = list(BASE)
     values[index] = values[index] + "-changed"
