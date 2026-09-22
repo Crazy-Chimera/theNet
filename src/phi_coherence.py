@@ -6,15 +6,35 @@ from src.structure import PhiStructure
 
 
 def phi_coherence(structure: PhiStructure) -> float:
-    """Return the structural coherence signal for a Φ structure."""
+    """Return largest weakly connected component coverage."""
     if not isinstance(structure, PhiStructure):
         raise TypeError("structure must be PhiStructure")
 
-    if not structure.relation_ids or not structure.node_ids:
+    nodes = set(structure.node_ids)
+    if not nodes:
         return 0.0
 
-    # PhiStructure stores canonical relation IDs and node IDs, but not relation
-    # endpoints. Without endpoints, connectivity cannot be reconstructed.
-    # Version 1 therefore treats a non-empty canonical Φ state as coherent by
-    # construction. A later schema version can add endpoint data explicitly.
-    return 1.0
+    adjacency = {node: set() for node in nodes}
+    for source, target in structure.edges:
+        adjacency[source].add(target)
+        adjacency[target].add(source)
+
+    largest = 0
+    remaining = set(nodes)
+
+    while remaining:
+        root = remaining.pop()
+        component = {root}
+        stack = [root]
+
+        while stack:
+            current = stack.pop()
+            for neighbor in adjacency[current]:
+                if neighbor in remaining:
+                    remaining.remove(neighbor)
+                    component.add(neighbor)
+                    stack.append(neighbor)
+
+        largest = max(largest, len(component))
+
+    return largest / len(nodes)
