@@ -42,6 +42,7 @@ from src.singularity import Singularity, create_singularity
 from src.verification import Verification, create_verification
 from src.relational_utility import RelationalUtility
 from src.resource_state import ResourceState
+from src.omega_credit_self_organizing_commitment import commit_self_organizing_allocation
 from src.self_organizing_allocation import (
     SelfOrganizingAllocation,
     allocate_memory_and_compute,
@@ -182,6 +183,23 @@ def allocate_resources(
     """Allocate from explicitly supplied Φ coherence."""
     return allocate_memory_and_compute(
         utilities, memory_resource, compute_resource, coherence_by_contributor
+    )
+
+
+def commit_self_organizing_resources(
+    utilities: list[RelationalUtility],
+    memory_resource: ResourceState,
+    compute_resource: ResourceState,
+    coherence_by_contributor: dict[str, float],
+    created_at: str,
+) -> tuple[ResourceState, ResourceState]:
+    """Expose the canonical Ω-Credit self-organizing resource transition."""
+    return commit_self_organizing_allocation(
+        tuple(utilities),
+        memory_resource,
+        compute_resource,
+        coherence_by_contributor,
+        created_at,
     )
 
 
