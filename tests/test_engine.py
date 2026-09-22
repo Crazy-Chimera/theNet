@@ -3,6 +3,8 @@ from thenet.engine import (
     advance_collectively,
     allocate_resources,
     allocate_resources_from_phi,
+    aggregate_omega_credit,
+    allocate_omega_credit_resources,
     analyze_quorum_capacity,
     build_closure,
     simulate_genesis_majority_agents,
@@ -14,6 +16,7 @@ from src.proposal import create_proposal
 from src.relation import create_relation
 from src.verification import create_verification
 from src.relational_utility import create_relational_utility
+from src.omega_credit import create_omega_credit
 from src.resource_state import create_resource_state
 
 
@@ -173,3 +176,23 @@ def test_runtime_exposes_genesis_majority_learning():
     assert [step.quorum for step in result.steps] == [2, 2]
     assert [step.consensus_reached for step in result.steps] == [True, True]
     assert result.final_state.version == 3
+
+
+def test_runtime_exposes_omega_credit_resource_allocation():
+    credits = [
+        create_omega_credit("agent:b", 0.25, 1.0, 1.0, True, STAMP),
+        create_omega_credit("agent:a", 0.75, 1.0, 1.0, True, STAMP),
+    ]
+    distribution = aggregate_omega_credit(credits)
+    allocation = allocate_omega_credit_resources(
+        distribution, memory_capacity=100.0, compute_capacity=40.0
+    )
+
+    assert allocation.memory_by_contributor == (
+        ("agent:a", 75.0),
+        ("agent:b", 25.0),
+    )
+    assert allocation.compute_by_contributor == (
+        ("agent:a", 30.0),
+        ("agent:b", 10.0),
+    )
