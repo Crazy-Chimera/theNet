@@ -5,6 +5,9 @@ import pytest
 from thenet.engine import (
     commit_ledger_backed_resources_with_record,
     commit_self_organizing_resources,
+    create_execution_audit_surface,
+    find_execution_record,
+    find_execution_records_by_contribution_ledger,
 )
 from src.contribution_ledger import create_contribution_ledger
 from src.execution_ledger import ExecutionRecord
@@ -89,3 +92,21 @@ def test_runtime_facade_exposes_ledger_backed_provenance():
     assert record.contribution_ledger_id == ledger.id
     assert record.memory_after_id == next_memory.id
     assert record.compute_after_id == next_compute.id
+
+
+
+def test_runtime_facade_exposes_queryable_execution_audit():
+    ledger = create_contribution_ledger(
+        [create_omega_credit("a", 1.0, 1.0, 1.0, True, "2026-09-22T12:00:00Z")]
+    )
+    memory = create_resource_state(100.0, 0.0, "2026-09-22T12:00:00Z")
+    compute = create_resource_state(50.0, 0.0, "2026-09-22T12:00:00Z")
+    _, _, record = commit_ledger_backed_resources_with_record(
+        ledger, memory, compute, 40.0, 20.0, "2026-09-22T12:02:00Z"
+    )
+
+    audit = create_execution_audit_surface([record])
+
+    assert find_execution_record(audit, record.id) == record
+    assert find_execution_records_by_contribution_ledger(audit, ledger.id) == (record,)
+    assert find_execution_record(audit, "missing") is None
