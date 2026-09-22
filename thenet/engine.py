@@ -17,6 +17,10 @@ from src.genesis_quorum_analysis import GenesisQuorumAnalysis, analyze_genesis_q
 from src.meaning import Meaning, create_meaning
 from src.omega import OmegaTransition, create_omega_transition
 from src.omega2 import OmegaMemory, create_omega_memory
+from src.omega_credit_engine import (
+    OmegaCreditDistribution,
+    create_omega_credit_distribution,
+)
 from src.phi import PhiStructure, create_phi
 from src.phi_derived_allocation import allocate_memory_and_compute_from_phi
 from src.proposal import Proposal, create_proposal
@@ -126,6 +130,13 @@ def advance_collectively(
         current_state, proposal, verifications, quorum,
         new_singularity_id, created_at,
     )
+
+
+def aggregate_omega_credit(
+    credits: list["OmegaCredit"],
+) -> OmegaCreditDistribution:
+    """Aggregate independently produced Ω-Credit records into contribution shares."""
+    return create_omega_credit_distribution(credits)
 
 
 def allocate_resources(
