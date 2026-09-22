@@ -14,6 +14,7 @@ from src.expression import Expression, create_expression
 from src.gamma import Convergence, create_convergence
 from src.genesis import GenesisState, create_genesis
 from src.genesis_quorum_analysis import GenesisQuorumAnalysis, analyze_genesis_quorum
+from src.genesis_simulation import GenesisSimulation, simulate_genesis_proposal
 from src.meaning import Meaning, create_meaning
 from src.omega import OmegaTransition, create_omega_transition
 from src.omega2 import OmegaMemory, create_omega_memory
@@ -161,6 +162,18 @@ def allocate_resources_from_phi(
     """Derive Φ coherence from topology before allocating resources."""
     return allocate_memory_and_compute_from_phi(
         utilities, memory_resource, compute_resource, structures_by_contributor
+    )
+
+
+def simulate_genesis_agents(
+    population_size: int,
+    quorum: int,
+    proposal_text: str,
+    created_at: str,
+) -> GenesisSimulation:
+    """Run the deterministic Genesis proposal-to-state simulation."""
+    return simulate_genesis_proposal(
+        population_size, quorum, proposal_text, created_at
     )
 
 
