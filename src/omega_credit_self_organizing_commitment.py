@@ -2,11 +2,30 @@
 
 from __future__ import annotations
 
+from hashlib import sha256
+import json
+
 from src.omega_credit_allocation import OmegaCreditAllocation
 from src.omega_credit_resource_commitment import apply_omega_credit_allocation
 from src.resource_state import ResourceState
 from src.relational_utility import RelationalUtility
 from src.self_organizing_allocation import allocate_memory_and_compute
+
+
+def _allocation_id(
+    memory_by_contributor: tuple[tuple[str, float], ...],
+    compute_by_contributor: tuple[tuple[str, float], ...],
+) -> str:
+    canonical = json.dumps(
+        {
+            "compute_by_contributor": compute_by_contributor,
+            "memory_by_contributor": memory_by_contributor,
+            "version": 1,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def commit_self_organizing_allocation(
@@ -24,16 +43,17 @@ def commit_self_organizing_allocation(
         coherence_by_contributor=coherence_by_contributor,
     )
 
+    memory_by_contributor = tuple(
+        (item.contributor_id, item.allocation) for item in allocation.memory
+    )
+    compute_by_contributor = tuple(
+        (item.contributor_id, item.allocation) for item in allocation.compute
+    )
+
     resource_allocation = OmegaCreditAllocation(
-        id=allocation.memory[0].contributor_id if allocation.memory else
-        allocation.compute[0].contributor_id if allocation.compute else
-        "empty",
-        memory_by_contributor=tuple(
-            (item.contributor_id, item.allocation) for item in allocation.memory
-        ),
-        compute_by_contributor=tuple(
-            (item.contributor_id, item.allocation) for item in allocation.compute
-        ),
+        id=_allocation_id(memory_by_contributor, compute_by_contributor),
+        memory_by_contributor=memory_by_contributor,
+        compute_by_contributor=compute_by_contributor,
     )
 
     return apply_omega_credit_allocation(
