@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from src.agent_state import AgentState, create_agent_state
 from src.co_definition import RelationalCoDefinition, create_co_definition
+from src.collective_evolution import CollectiveEvolutionResult, evolve_collectively
 from src.commit import EvolutionCommit, create_evolution_commit
 from src.essence import Essence, create_essence
 from src.evolution import evolve_agent_state
@@ -146,6 +147,25 @@ def advance(
     return evolve_agent_state(
         current_state,
         commit,
+        new_singularity_id,
+        created_at,
+    )
+
+
+def advance_collectively(
+    current_state: AgentState,
+    proposal: Proposal,
+    verifications: list[Verification],
+    quorum: int,
+    new_singularity_id: str,
+    created_at: str,
+) -> CollectiveEvolutionResult:
+    """Advance an Agent Ω state only after explicit verifier quorum."""
+    return evolve_collectively(
+        current_state,
+        proposal,
+        verifications,
+        quorum,
         new_singularity_id,
         created_at,
     )
