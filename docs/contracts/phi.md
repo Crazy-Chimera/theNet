@@ -1,42 +1,38 @@
-# Φ Structure Contract
+# Φ Structure Contract — Iteration 5
 
 ## Purpose
 
-Φ is the canonical structural layer of theNet. It derives an immutable relational topology from explicit Relation objects. It represents relational form only; it does not assign meaning or establish verification, consensus, contribution, memory, convergence, or safety.
+Φ is the minimal structural representation of theNet: a deterministic snapshot of explicit relations without adding interpretation, scoring, convergence, memory, or meaning.
 
 ## Input
 
-An iterable of Relation objects.
-
-Duplicate relations are allowed and are deduplicated structurally. Input order is not semantically significant. An empty iterable is valid.
+- relations: iterable of Relation-compatible records.
+- Each relation must expose id, source_id, target_id, kind, created_at, and version.
 
 ## Output
 
-An immutable PhiStructure containing:
-
+An immutable Structure containing:
 - id
-- relation_ids: sorted unique relation identifiers
-- node_ids: sorted unique source and target identifiers
-- edges: sorted unique directed source/target pairs
+- relation_ids
 - version = 1
 
 ## Identity
 
-The structure ID is SHA-256 over the canonical topology fields and version. Equivalent relation collections therefore produce the same structural identity.
+id is the SHA-256 digest of the canonical ordered structure payload. Relation IDs are normalized into a sorted tuple so equivalent relation sets produce the same structure identity.
 
 ## Invariants
 
-1. Every input item must be a Relation.
-2. Duplicate relations do not change the resulting topology.
-3. Relation order does not change the resulting topology.
-4. Node identifiers are derived only from relation endpoints.
-5. Directed edge orientation is preserved.
-6. Empty input is valid and deterministic.
-7. The returned structure is immutable.
-8. Input collections and Relation objects are not mutated.
-9. No external service is required.
-10. Φ describes structure only; it does not establish verification, consensus, contribution, memory, convergence, meaning, or safety.
+1. Input relations must be structurally valid.
+2. Empty relation collections are valid and represent an empty structure.
+3. Relation IDs are unique in the resulting structure.
+4. Output is immutable.
+5. Equivalent relation sets produce the same structure ID independent of input order.
+6. Adding or removing a relation changes structure identity.
+7. Φ does not infer meaning from a relation.
+8. Φ does not verify relations.
+9. Φ does not perform consensus, contribution, memory, convergence, or expression.
+10. No external-service dependency.
 
-## Architectural boundary
+## Boundary
 
-Genesis creates subjects. Relation creates directed links. Φ composes those links into canonical topology. Φ-derived coherence and later layers consume this topology without redefining its structural identity.
+Relation creates explicit links. Φ represents their structural configuration. Later modules may evaluate, remember, interpret, or evolve that configuration; Φ remains a minimal structural primitive.
