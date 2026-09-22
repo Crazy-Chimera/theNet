@@ -19,4 +19,13 @@ Verify the canonical Φ structural primitive after the final contract alignment.
 
 This document is committed with the current Φ contract state so GitHub Actions executes the complete package-build, runtime-smoke, and pytest suite against the same revision.
 
-Completion requires a successful CI run on this commit.
+## Result
+
+CI run `35753263177` completed successfully on commit `e0bc9dd4977342347a49d6ffdd416bf4b238597b`.
+
+- package build: passed
+- package install: passed
+- runtime smoke test: passed
+- pytest: **526 passed in 4.29s**
+
+Iteration 5 is verified.
