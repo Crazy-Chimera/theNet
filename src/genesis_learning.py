@@ -15,7 +15,7 @@ from src.verification import Verification, create_verification
 @dataclass(frozen=True)
 class GenesisLearningStep:
     proposal: Proposal
-    consensus: Consensus
+    consensus: Consensus | None
     verifier_count: int
     quorum: int
     consensus_reached: bool
@@ -73,16 +73,20 @@ def simulate_genesis_learning(
             for verifier in population.agents[1:]
         )
 
-        consensus = create_consensus(proposal.id, verifications, quorum)
-        reached = consensus.reached
+        consensus = (
+            create_consensus(proposal.id, verifications, quorum)
+            if verifications
+            else None
+        )
+        reached = consensus.reached if consensus is not None else False
 
         if not reached:
             steps.append(
                 GenesisLearningStep(
                     proposal=proposal,
                     consensus=consensus,
-                    verifier_count=len(consensus.verifier_ids),
-                    quorum=consensus.quorum,
+                    verifier_count=len(verifications),
+                    quorum=quorum,
                     consensus_reached=False,
                     evolved=False,
                     state_version=proposer.version,
