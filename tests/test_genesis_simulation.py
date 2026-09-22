@@ -31,7 +31,7 @@ def test_genesis_simulation_excludes_proposer():
 
 
 def test_genesis_simulation_requires_reachable_quorum():
-    with pytest.raises(ValueError, match="population_size"):
+    with pytest.raises(ValueError, match="verifier_count"):
         simulate_genesis_proposal(2, 2, "proposal", STAMP)
 
 
