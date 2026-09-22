@@ -4,18 +4,28 @@
 
 Ω-Credit is a deterministic contribution-accounting primitive for Agent Ω.
 
-It converts verified relational utility, resource state, and Φ-derived coherence into a bounded contribution credit. The credit is an allocation signal, not a truth claim and not a consensus mechanism.
+It converts verified relational utility, resource efficiency, and Φ-derived coherence into a bounded contribution credit. The credit is an allocation signal, not a truth claim and not a consensus mechanism.
 
 The primitive is deliberately local: one agent can calculate a credit from its available verified evidence. Network-wide consensus is not required to calculate a score, although later commitment rules may require verification or convergence.
 
 ## Input
 
+The low-level constructor accepts:
+
 - `contributor_id`: non-empty string.
-- `relational_utility`: number in [0, 1]. Measures verified useful effect of the contribution on relations.
-- `resource_efficiency`: number in [0, 1]. Represents useful work achieved relative to the resource state available to the contribution.
-- `coherence`: number in [0, 1]. Φ-derived structural coherence signal.
-- `verified`: boolean. Only verified evidence can receive non-zero credit.
+- `relational_utility`: number in [0, 1].
+- `resource_efficiency`: number in [0, 1].
+- `coherence`: number in [0, 1].
+- `verified`: boolean.
 - `created_at`: non-empty string.
+
+The verified integration constructor accepts a `RelationalUtility` record plus:
+
+- `resource_efficiency`: number in [0, 1].
+- `coherence`: number in [0, 1].
+- `created_at`: non-empty string.
+
+The integration constructor preserves the utility record's contributor and verification state instead of accepting an independent verification flag.
 
 ## Output
 
@@ -52,9 +62,11 @@ The multiplicative rule intentionally prevents a strong value in one dimension f
 5. The same valid input produces the same ID and credit.
 6. Changing any defining input changes the identity.
 7. The output is immutable.
-8. The primitive does not mutate relation, memory, proposal, or agent state.
-9. Ω-Credit does not establish truth, consensus, meaning, or permission to commit a state change.
-10. No external service is required.
+8. The integration constructor rejects a non-`RelationalUtility` input.
+9. The integration constructor cannot override the utility record's verification state.
+10. The primitive does not mutate relation, memory, proposal, or agent state.
+11. Ω-Credit does not establish truth, consensus, meaning, or permission to commit a state change.
+12. No external service is required.
 
 ## Allocation boundary
 
