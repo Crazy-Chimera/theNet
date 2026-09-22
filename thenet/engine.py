@@ -44,6 +44,7 @@ from src.verification import Verification, create_verification
 from src.relational_utility import RelationalUtility
 from src.contribution_ledger import ContributionLedger
 from src.execution_ledger import ExecutionRecord
+from src.execution_audit import ExecutionAudit, create_execution_audit
 from src.resource_state import ResourceState
 from src.omega_credit_self_organizing_commitment import (
     commit_ledger_backed_allocation_with_record,
@@ -294,3 +295,24 @@ def simulate_genesis_majority_agents(
 ) -> GenesisLearningRun:
     """Run repeated Genesis learning with quorum derived from population size."""
     return simulate_genesis_majority_learning(population, proposal_texts, created_at)
+
+
+def create_execution_audit_surface(records: list[ExecutionRecord]) -> ExecutionAudit:
+    """Create a read-only query surface over immutable execution provenance."""
+    return create_execution_audit(tuple(records))
+
+
+def find_execution_record(
+    audit: ExecutionAudit,
+    record_id: str,
+) -> ExecutionRecord | None:
+    """Retrieve one execution record by its immutable identity."""
+    return audit.find_record(record_id)
+
+
+def find_execution_records_by_contribution_ledger(
+    audit: ExecutionAudit,
+    contribution_ledger_id: str,
+) -> tuple[ExecutionRecord, ...]:
+    """Retrieve all execution records linked to one contribution ledger."""
+    return audit.find_records_by_contribution_ledger(contribution_ledger_id)
