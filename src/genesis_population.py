@@ -65,6 +65,10 @@ def simulate_genesis_proposal(
         raise ValueError("population must contain agents")
     if not isinstance(proposal_text, str) or not proposal_text.strip():
         raise ValueError("proposal_text must be non-empty")
+    if not isinstance(quorum, int) or isinstance(quorum, bool) or quorum < 1:
+        raise ValueError("quorum must be a positive integer")
+    if not isinstance(created_at, str) or not created_at.strip():
+        raise ValueError("created_at must be non-empty")
 
     proposer = population.agents[0]
     proposal = create_proposal(
