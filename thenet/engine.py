@@ -17,6 +17,7 @@ from src.genesis_quorum_analysis import GenesisQuorumAnalysis, analyze_genesis_q
 from src.meaning import Meaning, create_meaning
 from src.omega import OmegaTransition, create_omega_transition
 from src.omega2 import OmegaMemory, create_omega_memory
+from src.omega_credit import OmegaCredit
 from src.omega_credit_engine import (
     OmegaCreditDistribution,
     create_omega_credit_distribution,
@@ -133,7 +134,7 @@ def advance_collectively(
 
 
 def aggregate_omega_credit(
-    credits: list["OmegaCredit"],
+    credits: list[OmegaCredit],
 ) -> OmegaCreditDistribution:
     """Aggregate independently produced Ω-Credit records into contribution shares."""
     return create_omega_credit_distribution(credits)
