@@ -43,6 +43,7 @@ from src.verification import Verification, create_verification
 from src.relational_utility import RelationalUtility
 from src.resource_state import ResourceState
 from src.omega_credit_self_organizing_commitment import commit_self_organizing_allocation
+from src.omega_credit_phi_resource_commitment import commit_self_organizing_allocation_from_phi
 from src.self_organizing_allocation import (
     SelfOrganizingAllocation,
     allocate_memory_and_compute,
@@ -212,6 +213,23 @@ def allocate_resources_from_phi(
     """Derive Φ coherence from topology before allocating resources."""
     return allocate_memory_and_compute_from_phi(
         utilities, memory_resource, compute_resource, structures_by_contributor
+    )
+
+
+def commit_self_organizing_resources_from_phi(
+    utilities: list[RelationalUtility],
+    memory_resource: ResourceState,
+    compute_resource: ResourceState,
+    structures_by_contributor: dict[str, PhiStructure],
+    created_at: str,
+) -> tuple[ResourceState, ResourceState]:
+    """Derive Φ coherence and commit the resulting Ω-Credit resource transition."""
+    return commit_self_organizing_allocation_from_phi(
+        utilities,
+        memory_resource,
+        compute_resource,
+        structures_by_contributor,
+        created_at,
     )
 
 
