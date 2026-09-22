@@ -1,6 +1,6 @@
 # Iteration 13 — Ρ Relational Co-Definition Verification
 
-Status: PENDING CI
+Status: VERIFIED
 
 ## Scope
 
@@ -30,18 +30,18 @@ The primitive is deterministic, immutable, directional, and independent of exter
 
 ## Verification requirements
 
-GitHub Actions must pass:
+GitHub Actions run 35758165207 completed successfully.
 
-- package build;
-- package installation;
-- runtime smoke test;
-- complete test suite.
+The CI job completed:
 
-The Ρ-specific tests must cover creation, deterministic identity, validation, directionality, identity sensitivity, immutability, and input preservation.
+- package build: success;
+- package installation: success;
+- runtime smoke test: success;
+- complete test suite: **527 passed in 3.99s**.
 
 ## Result
 
-Pending CI execution for this verification record.
+Iteration 13 is verified.
 
 ## Boundary
 
