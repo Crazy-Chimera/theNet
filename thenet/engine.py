@@ -27,6 +27,7 @@ from src.omega import OmegaTransition, create_omega_transition
 from src.omega2 import OmegaMemory, create_omega_memory
 from src.omega_credit import OmegaCredit
 from src.omega_credit_allocation import OmegaCreditAllocation, create_omega_credit_allocation
+from src.omega_credit_resource_commitment import apply_omega_credit_allocation
 from src.omega_credit_engine import (
     OmegaCreditDistribution,
     create_omega_credit_distribution,
@@ -150,6 +151,18 @@ def allocate_omega_credit_resources(
     """Allocate memory and compute from an already aggregated Ω-Credit distribution."""
     return create_omega_credit_allocation(
         distribution, memory_capacity, compute_capacity
+    )
+
+
+def commit_omega_credit_resources(
+    allocation: OmegaCreditAllocation,
+    memory_resource: ResourceState,
+    compute_resource: ResourceState,
+    created_at: str,
+) -> tuple[ResourceState, ResourceState]:
+    """Apply an Ω-Credit allocation as immutable resource-state transitions."""
+    return apply_omega_credit_allocation(
+        allocation, memory_resource, compute_resource, created_at
     )
 
 
