@@ -96,6 +96,36 @@ Inputs:
 
 Produces a deterministic capacity analysis showing how many independent verifier identities are available after excluding the proposer.
 
+
+### create_execution_audit_surface
+
+Inputs:
+
+- immutable ExecutionRecord objects.
+
+Produces:
+
+- immutable ExecutionAudit;
+- deterministic ExecutionLedger derived from the supplied records.
+
+### find_execution_record
+
+Inputs:
+
+- ExecutionAudit;
+- execution record ID.
+
+Produces the matching immutable ExecutionRecord or None.
+
+### find_execution_records_by_contribution_ledger
+
+Inputs:
+
+- ExecutionAudit;
+- contribution ledger ID.
+
+Produces a tuple of all matching immutable ExecutionRecord objects.
+
 ## Invariants
 
 1. No primitive is mutated.
