@@ -1,10 +1,12 @@
-"""Minimal runtime entry point for deployment smoke tests."""
+"""Deployment entry point for theNet."""
 
 from __future__ import annotations
 
+from thenet.server import serve
+
 
 def main() -> None:
-    print("theNet runtime: ready")
+    serve()
 
 
 if __name__ == "__main__":
