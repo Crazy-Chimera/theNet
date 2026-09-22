@@ -139,3 +139,24 @@ def test_collective_evolution_rejects_proposal_for_wrong_state():
             new_singularity_id="singularity-1",
             created_at="2026-09-22T00:08:00Z",
         )
+
+
+def test_collective_evolution_rejects_proposer_self_verification():
+    state, proposal, _ = _fixture()
+    self_verification = create_verification(
+        proposal.id,
+        proposal.proposer_id,
+        "self-attestation",
+        True,
+        "2026-09-22T00:03:00Z",
+    )
+
+    with pytest.raises(ValueError, match="cannot verify"):
+        evolve_collectively(
+            state,
+            proposal,
+            [self_verification],
+            quorum=1,
+            new_singularity_id="singularity-1",
+            created_at="2026-09-22T00:04:00Z",
+        )
