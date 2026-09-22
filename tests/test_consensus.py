@@ -97,3 +97,22 @@ def test_consensus_is_immutable_and_deterministic():
     assert left == right
     with pytest.raises(FrozenInstanceError):
         left.quorum = 3
+
+
+def test_strict_majority_quorum_is_explicit():
+    from src.consensus import strict_majority_quorum
+
+    assert strict_majority_quorum(1) == 1
+    assert strict_majority_quorum(2) == 2
+    assert strict_majority_quorum(3) == 2
+    assert strict_majority_quorum(4) == 3
+
+
+def test_strict_majority_quorum_rejects_invalid_population():
+    from src.consensus import strict_majority_quorum
+
+    with pytest.raises(ValueError):
+        strict_majority_quorum(0)
+
+    with pytest.raises(ValueError):
+        strict_majority_quorum(True)
