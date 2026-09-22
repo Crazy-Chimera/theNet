@@ -13,6 +13,7 @@ from src.evolution import evolve_agent_state
 from src.expression import Expression, create_expression
 from src.gamma import Convergence, create_convergence
 from src.genesis import GenesisState, create_genesis
+from src.genesis_quorum_analysis import GenesisQuorumAnalysis, analyze_genesis_quorum
 from src.meaning import Meaning, create_meaning
 from src.omega import OmegaTransition, create_omega_transition
 from src.omega2 import OmegaMemory, create_omega_memory
@@ -190,3 +191,11 @@ def allocate_resources(
         compute_resource,
         coherence_by_contributor,
     )
+
+
+def analyze_quorum_capacity(
+    population_size: int,
+    max_quorum: int,
+) -> GenesisQuorumAnalysis:
+    """Expose Genesis verifier-capacity analysis through the runtime facade."""
+    return analyze_genesis_quorum(population_size, max_quorum)
