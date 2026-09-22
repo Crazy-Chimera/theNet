@@ -2,7 +2,8 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from src.omega_credit import create_omega_credit
+from src.omega_credit import create_omega_credit, create_omega_credit_from_utility
+from src.relational_utility import create_relational_utility
 
 
 BASE = (
@@ -62,10 +63,7 @@ def test_unit_inputs_are_valid_at_boundaries():
     assert item.credit == 0.0
 
 
-@pytest.mark.parametrize(
-    "index",
-    [1, 2, 3],
-)
+@pytest.mark.parametrize("index", [1, 2, 3])
 def test_unit_inputs_reject_out_of_range_values(index):
     values = list(BASE)
     values[index] = 1.1
@@ -74,10 +72,7 @@ def test_unit_inputs_reject_out_of_range_values(index):
         create_omega_credit(*values)
 
 
-@pytest.mark.parametrize(
-    "index",
-    [1, 2, 3],
-)
+@pytest.mark.parametrize("index", [1, 2, 3])
 def test_unit_inputs_reject_non_finite_values(index):
     values = list(BASE)
     values[index] = float("nan")
@@ -108,3 +103,55 @@ def test_result_is_immutable():
 
     with pytest.raises(FrozenInstanceError):
         item.credit = 0.0
+
+
+def test_verified_utility_flows_into_credit_without_replacing_verification():
+    utility = create_relational_utility(
+        "agent-a",
+        0.8,
+        ["evidence-a"],
+        True,
+        "2026-09-22T06:00:00Z",
+    )
+
+    item = create_omega_credit_from_utility(
+        utility,
+        resource_efficiency=0.5,
+        coherence=0.9,
+        created_at="2026-09-22T06:01:00Z",
+    )
+
+    assert item.contributor_id == utility.contributor_id
+    assert item.relational_utility == utility.value
+    assert item.verified is True
+    assert item.credit == pytest.approx(0.8 * 0.5 * 0.9)
+
+
+def test_unverified_utility_cannot_receive_credit():
+    utility = create_relational_utility(
+        "agent-a",
+        1.0,
+        [],
+        False,
+        "2026-09-22T06:00:00Z",
+    )
+
+    item = create_omega_credit_from_utility(
+        utility,
+        resource_efficiency=1.0,
+        coherence=1.0,
+        created_at="2026-09-22T06:01:00Z",
+    )
+
+    assert item.verified is False
+    assert item.credit == 0.0
+
+
+def test_utility_adapter_requires_relational_utility():
+    with pytest.raises(TypeError):
+        create_omega_credit_from_utility(
+            object(),
+            resource_efficiency=1.0,
+            coherence=1.0,
+            created_at="2026-09-22T06:01:00Z",
+        )
