@@ -101,3 +101,38 @@ def test_invalid_learning_inputs_are_rejected():
             quorum=1,
             created_at=(),
         )
+
+
+def test_learning_step_contains_explicit_consensus_record():
+    population = create_genesis_population(3, "2026-09-22T00:00:00Z")
+
+    result = simulate_genesis_learning(
+        population,
+        ("explicit consensus",),
+        quorum=2,
+        created_at=("2026-09-22T00:00:01Z",),
+    )
+
+    step = result.steps[0]
+
+    assert step.consensus is not None
+    assert step.consensus.proposal_id == step.proposal.id
+    assert step.consensus.verifier_ids == tuple(
+        sorted(agent.subject_id for agent in population.agents[1:])
+    )
+    assert step.consensus.reached is True
+
+
+def test_no_verifier_produces_no_consensus_and_no_evolution():
+    population = create_genesis_population(1, "2026-09-22T00:00:00Z")
+
+    result = simulate_genesis_learning(
+        population,
+        ("blocked",),
+        quorum=1,
+        created_at=("2026-09-22T00:00:01Z",),
+    )
+
+    assert result.steps[0].consensus is None
+    assert result.steps[0].consensus_reached is False
+    assert result.final_state == population.agents[0]
