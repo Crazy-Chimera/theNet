@@ -58,3 +58,12 @@ def test_runtime_facade_exposes_same_simulation():
     facade = simulate_genesis_agents(3, 1, "proposal", STAMP)
 
     assert facade == direct
+
+def test_genesis_simulation_matches_bootstrap_gate_boundary():
+    from src.genesis_verification_gate import evaluate_genesis_verification
+
+    gate = evaluate_genesis_verification(3, 2, 2)
+
+    assert gate.approved is True
+    result = simulate_genesis_proposal(3, 2, "proposal", STAMP)
+    assert len(result.verifier_ids) == gate.verifier_count
