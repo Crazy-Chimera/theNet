@@ -24,6 +24,10 @@ jobs:
         run: python -m pip install --upgrade pip pytest build
       - name: Build package
         run: python -m build
+      - name: Install package
+        run: python -m pip install .
+      - name: Runtime smoke test
+        run: python -m thenet
       - name: Run tests
         # Keep the repository root importable for the primitive modules.
         # The suite is the executable specification for every completed layer.
