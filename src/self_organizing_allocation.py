@@ -18,6 +18,18 @@ class SelfOrganizingAllocation:
     compute: tuple[CreditAllocation, ...]
     version: int = 1
 
+    @property
+    def memory_by_contributor(self) -> tuple[tuple[str, float], ...]:
+        return tuple(
+            (item.contributor_id, item.allocation) for item in self.memory
+        )
+
+    @property
+    def compute_by_contributor(self) -> tuple[tuple[str, float], ...]:
+        return tuple(
+            (item.contributor_id, item.allocation) for item in self.compute
+        )
+
 
 def _validate_coherence(coherence: float) -> float:
     if isinstance(coherence, bool) or not isinstance(coherence, (int, float)):
@@ -30,6 +42,12 @@ def _validate_coherence(coherence: float) -> float:
 
 def _remaining(resource: ResourceState) -> float:
     return max(resource.available - resource.used, 0.0)
+
+
+def _effective_resource_efficiency(resource: ResourceState) -> float:
+    # ResourceState.efficiency tracks utilization; Ω-Credit needs remaining
+    # capacity as the efficiency available for the next allocation.
+    return 1.0 - resource.efficiency
 
 
 def _credits(
@@ -73,12 +91,12 @@ def allocate_memory_and_compute(
     utility_records = tuple(utilities)
     memory_credits = _credits(
         utility_records,
-        memory_resource.efficiency,
+        _effective_resource_efficiency(memory_resource),
         coherence_by_contributor,
     )
     compute_credits = _credits(
         utility_records,
-        compute_resource.efficiency,
+        _effective_resource_efficiency(compute_resource),
         coherence_by_contributor,
     )
 
