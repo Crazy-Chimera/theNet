@@ -76,7 +76,7 @@ def test_genesis_simulation_matches_bootstrap_gate_boundary():
 def test_genesis_bootstrap_derives_majority_quorum():
     result = simulate_genesis_bootstrap(5, "bootstrap proposal", STAMP)
 
-    assert len(result.verifier_ids) == 2
+    assert len(result.verifier_ids) == 3
     assert result.proposer_id not in result.verifier_ids
 
 
