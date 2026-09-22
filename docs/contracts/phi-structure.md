@@ -2,60 +2,45 @@
 
 ## Purpose
 
-Φ is the structural layer of theNet. It represents a deterministic, immutable structural fingerprint of an ordered set of relation identifiers without interpreting, verifying, scoring, or mutating those relations.
+Φ is the structural layer of theNet. It derives an immutable relational topology from explicit Relation objects. The canonical Φ state contains the relation set, participating node set, and directed edges.
 
 ## Input
 
-- `relation_ids`: a sequence of non-empty strings.
-- The sequence order is significant.
-- An empty sequence is valid and represents an empty structure.
+- An iterable of Relation objects.
+- Duplicate relation objects are allowed and are deduplicated structurally.
+- Input order is not semantically significant.
+- An empty iterable is valid.
 
 ## Output
 
-An immutable `PhiStructure` containing:
+An immutable PhiStructure containing:
 
-- `id`: SHA-256 identifier of the canonical structure.
-- `relation_ids`: the exact ordered tuple supplied by the caller.
-- `version`: `1`.
+- id: SHA-256 identifier of the canonical topology.
+- relation_ids: sorted unique relation identifiers.
+- node_ids: sorted unique source and target identifiers.
+- edges: sorted unique source/target pairs.
+- version: 1.
 
 ## Identity
 
-The identifier is derived from the canonical JSON representation of:
-
-`{relation_ids, version}`
-
-with sorted object keys and compact separators.
-
-Therefore the same ordered input produces the same identifier.
+The identifier is derived from the canonical JSON representation of the topology fields and version, with sorted object keys and compact separators. Equivalent relation collections therefore produce the same structural identity.
 
 ## Invariants
 
-1. `relation_ids` must be a sequence.
-2. Every relation identifier must be a non-empty string.
-3. The returned structure is immutable.
-4. Input order is preserved.
-5. Reordering identifiers changes the identity.
-6. Adding or removing an identifier changes the identity.
-7. The empty structure is valid and deterministic.
-8. The function does not mutate supplied input.
-9. No external services are required.
-10. Φ describes structure only; it does not establish truth, consensus, contribution, memory, convergence, meaning, or safety.
+1. Every input item must be a Relation.
+2. Duplicate relations do not change the resulting topology.
+3. Relation order does not change the resulting topology.
+4. Node identifiers are derived only from relation endpoints.
+5. Directed edge orientation is preserved.
+6. The returned structure is immutable.
+7. Empty input is valid and deterministic.
+8. The input collection and relation objects are not mutated.
+9. No external service is required.
+10. Φ describes relational structure only; it does not by itself establish verification, consensus, contribution, memory, convergence, meaning, or safety.
 
 ## Boundary
 
 - Genesis creates subjects.
 - Relation creates directed links.
-- Φ Structure composes relation identifiers into a structural state.
-- Later layers may use this structure for coherence, resonance, convergence, memory, or contribution calculations.
-
-## Required tests
-
-- empty structure
-- ordered structure creation
-- deterministic identity
-- order sensitivity
-- addition/removal sensitivity
-- invalid container rejection
-- invalid relation identifier rejection
-- immutability
-- input preservation
+- Φ composes relations into canonical topology.
+- Φ-derived coherence and later layers consume this topology without redefining its structural identity.
