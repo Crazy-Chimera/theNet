@@ -33,6 +33,39 @@ Inputs:
 
 Produces the next immutable AgentState.
 
+### advance_collectively
+
+Inputs:
+
+- current AgentState
+- Proposal
+- independent Verification records
+- quorum
+- new singularity identifier
+- creation timestamp
+
+Produces the next immutable AgentState only after explicit verifier quorum.
+
+### allocate_resources
+
+Inputs:
+
+- relational utility records
+- memory ResourceState
+- compute ResourceState
+- coherence by contributor
+
+Produces a deterministic self-organizing memory/compute allocation.
+
+### analyze_genesis_quorum
+
+Inputs:
+
+- population size
+- maximum quorum to inspect
+
+Produces a deterministic capacity analysis showing how many independent verifier identities are available after excluding the proposer.
+
 ## Invariants
 
 1. No primitive is mutated.
