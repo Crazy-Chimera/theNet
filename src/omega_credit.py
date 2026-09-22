@@ -1,4 +1,4 @@
-"""Deterministic Ω-Credit contribution primitive for theNet."""
+"""Deterministic immutable Ω-Credit contribution primitive for theNet."""
 
 from __future__ import annotations
 
@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from hashlib import sha256
 import json
 import math
+
+from src.relational_utility import RelationalUtility
 
 
 @dataclass(frozen=True)
@@ -100,5 +102,29 @@ def create_omega_credit(
         coherence=structural_coherence,
         verified=verified,
         credit=credit,
+        created_at=created_at,
+    )
+
+
+def create_omega_credit_from_utility(
+    utility: RelationalUtility,
+    resource_efficiency: float,
+    coherence: float,
+    created_at: str,
+) -> OmegaCredit:
+    """Build credit from an already assessed utility signal.
+
+    Verification stays attached to the utility record so callers cannot
+    accidentally replace a verified assessment with a different flag.
+    """
+    if not isinstance(utility, RelationalUtility):
+        raise TypeError("utility must be a RelationalUtility")
+
+    return create_omega_credit(
+        contributor_id=utility.contributor_id,
+        relational_utility=utility.value,
+        resource_efficiency=resource_efficiency,
+        coherence=coherence,
+        verified=utility.verified,
         created_at=created_at,
     )
