@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from hashlib import sha256
 import json
 
-from agent_state import AgentState
-from commit import EvolutionCommit
+from src.agent_state import AgentState
+from src.commit import EvolutionCommit
 
 
 def _canonical(
