@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: thenet
+    runtime: python
+    plan: free
+    region: frankfurt
+    branch: main
+    autoDeploy: true
+    buildCommand: pip install .
+    startCommand: python -m thenet
