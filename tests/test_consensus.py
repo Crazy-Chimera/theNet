@@ -57,7 +57,7 @@ def test_invalid_or_mismatched_verification_is_rejected():
     invalid = create_verification(
         proposal.id, "agent:b", "evidence:b", False, STAMP
     )
-    other = _proposal()
+    other = create_proposal("agent:a", "state:1", "different proposal", STAMP)
 
     with pytest.raises(ValueError):
         create_consensus(proposal.id, [invalid], 1)
