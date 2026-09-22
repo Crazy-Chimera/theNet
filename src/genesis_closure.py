@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.co_definition import CoDefinition
+from src.co_definition import RelationalCoDefinition
 from src.essence import Essence
 from src.expression import Expression
 from src.gamma import Convergence
@@ -41,7 +41,7 @@ def create_genesis_closure(
     pi: Meaning,
     psi: Expression,
     theta: SelfKnowledge,
-    rho: CoDefinition,
+    rho: RelationalCoDefinition,
     sigma: Essence,
     iota: Singularity,
 ) -> GenesisClosure:
