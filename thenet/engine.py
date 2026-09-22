@@ -19,6 +19,9 @@ from src.genesis_simulation import (
     simulate_genesis_bootstrap,
     simulate_genesis_proposal,
 )
+from src.genesis_learning import GenesisLearningRun
+from src.genesis_majority_learning import simulate_genesis_majority_learning
+from src.genesis_population import GenesisPopulation
 from src.meaning import Meaning, create_meaning
 from src.omega import OmegaTransition, create_omega_transition
 from src.omega2 import OmegaMemory, create_omega_memory
@@ -196,3 +199,12 @@ def simulate_genesis_bootstrap_agents(
 ) -> GenesisSimulation:
     """Run Genesis simulation using the derived bootstrap quorum policy."""
     return simulate_genesis_bootstrap(population_size, proposal_text, created_at)
+
+
+def simulate_genesis_majority_agents(
+    population: GenesisPopulation,
+    proposal_texts: tuple[str, ...],
+    created_at: tuple[str, ...],
+) -> GenesisLearningRun:
+    """Run repeated Genesis learning with quorum derived from population size."""
+    return simulate_genesis_majority_learning(population, proposal_texts, created_at)
