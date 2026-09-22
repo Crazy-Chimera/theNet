@@ -2,82 +2,60 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from src.genesis import create_genesis
-from src.relation import create_relation
-from src.phi import create_phi
+from src.phi import create_phi_structure
 
 
-def test_phi_captures_relations_and_nodes():
-    a = create_genesis("a", "2026-09-21T00:00:00Z")
-    b = create_genesis("b", "2026-09-21T00:00:00Z")
-    relation = create_relation(a.id, b.id, "knows", "2026-09-21T00:01:00Z")
-
-    phi = create_phi([relation])
-
-    assert phi.relation_ids == (relation.id,)
-    assert phi.node_ids == tuple(sorted((a.id, b.id)))
-    assert len(phi.id) == 64
+def test_phi_structure_creation():
+    state = create_phi_structure(["b", "a"], ["r2", "r1"])
+    assert state.node_ids == ("a", "b")
+    assert state.relation_ids == ("r1", "r2")
+    assert state.density == 1.0
+    assert state.version == 1
+    assert len(state.id) == 64
 
 
-def test_phi_is_order_independent_and_deduplicates_relations():
-    a = create_genesis("a", "2026-09-21T00:00:00Z")
-    b = create_genesis("b", "2026-09-21T00:00:00Z")
-    c = create_genesis("c", "2026-09-21T00:00:00Z")
-    ab = create_relation(a.id, b.id, "knows", "2026-09-21T00:01:00Z")
-    bc = create_relation(b.id, c.id, "knows", "2026-09-21T00:02:00Z")
-
-    left = create_phi([ab, bc, ab])
-    right = create_phi([bc, ab])
-
-    assert left == right
+def test_phi_identity_is_deterministic():
+    first = create_phi_structure(["b", "a"], ["r2", "r1"])
+    second = create_phi_structure(["a", "b"], ["r1", "r2"])
+    assert first == second
 
 
-def test_empty_phi_is_valid():
-    phi = create_phi([])
-
-    assert phi.relation_ids == ()
-    assert phi.node_ids == ()
-    assert len(phi.id) == 64
+def test_phi_density_for_partial_structure():
+    state = create_phi_structure(["a", "b", "c"], ["r1"])
+    assert state.density == pytest.approx(1 / 6)
 
 
-def test_phi_rejects_invalid_relation_fields():
-    class Invalid:
-        id = "relation"
-        source_id = ""
-        target_id = "target"
+def test_single_node_has_zero_density():
+    state = create_phi_structure(["a"], [])
+    assert state.density == 0.0
 
-    with pytest.raises(TypeError):
-        create_phi([Invalid()])
+
+def test_empty_nodes_are_rejected():
+    with pytest.raises(ValueError, match="node_ids"):
+        create_phi_structure([], [])
+
+
+@pytest.mark.parametrize(
+    "nodes, relations, field",
+    [
+        (["a", "a"], [], "node_ids"),
+        (["a", ""], [], "node_ids"),
+        (["a"], ["r1", "r1"], "relation_ids"),
+        (["a"], ["r1", ""], "relation_ids"),
+    ],
+)
+def test_invalid_identifiers_are_rejected(nodes, relations, field):
+    with pytest.raises(ValueError, match=field):
+        create_phi_structure(nodes, relations)
 
 
 def test_phi_is_immutable():
-    phi = create_phi([])
-
+    state = create_phi_structure(["a", "b"], ["r1"])
     with pytest.raises(FrozenInstanceError):
-        phi.version = 2
+        state.density = 0.5
 
 
-def test_phi_does_not_mutate_input_collection():
-    a = create_genesis("a", "2026-09-21T00:00:00Z")
-    b = create_genesis("b", "2026-09-21T00:00:00Z")
-    relation = create_relation(a.id, b.id, "knows", "2026-09-21T00:01:00Z")
-    relations = [relation]
-
-    create_phi(relations)
-
-    assert relations == [relation]
-
-
-def test_public_phi_api_uses_canonical_topology():
-    from src.phi_coherence import phi_coherence
-    from src.structure import PhiStructure
-
-    a = create_genesis("a", "2026-09-22T00:00:00Z")
-    b = create_genesis("b", "2026-09-22T00:00:00Z")
-    relation = create_relation(a.id, b.id, "knows", "2026-09-22T00:01:00Z")
-
-    phi = create_phi([relation])
-
-    assert isinstance(phi, PhiStructure)
-    assert phi.edges == ((a.id, b.id),)
-    assert phi_coherence(phi) == 1.0
+def test_structural_change_changes_identity():
+    first = create_phi_structure(["a", "b"], ["r1"])
+    second = create_phi_structure(["a", "b"], ["r2"])
+    assert first.id != second.id

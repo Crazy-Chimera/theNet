@@ -1,39 +1,26 @@
 # Φ Structure Contract
 
-## Purpose
-
-Φ is the canonical structural representation of an explicit relation set. It derives a deterministic relational topology without mutating the underlying entities or relations.
+Φ is the structural layer: the network form created by relations. In theNet, this iteration implements a bounded graph-structural proxy for Φ; it is not a claim that software computes physical quantum entanglement.
 
 ## Input
-
-A finite iterable of `Relation` objects.
+- node_ids: non-empty sequence of unique non-empty strings.
+- relation_ids: sequence of unique non-empty strings.
 
 ## Output
+Immutable PhiStructure with deterministic id, sorted node_ids, sorted relation_ids, density in [0,1], version 1.
 
-An immutable `PhiStructure` containing:
-
-- `id`: SHA-256 fingerprint of the canonical topology
-- `relation_ids`: sorted unique relation identifiers
-- `node_ids`: sorted unique subject identifiers appearing in the relations
-- `edges`: sorted unique directed `(source_id, target_id)` pairs
-- `version`: `1`
-
-The public `create_phi` API and the canonical `create_phi_structure` API produce the same `PhiStructure` type and topology.
+For N distinct nodes: density = relation_count / (N * (N - 1)). The value is capped at 1.0; self-relations are not part of the denominator.
 
 ## Invariants
-
-1. The input relation collection is not mutated.
-2. Relation ordering does not affect the resulting structure ID.
-3. Repeated relation IDs are represented once.
-4. Repeated edges are represented once.
-5. The same structural topology produces the same ID.
-6. Changing a relation endpoint changes the topology and its ID.
-7. Reversing a directed relation changes the topology and its ID.
-8. An empty relation collection is valid and produces an empty structural state.
-9. The output is immutable.
-10. Φ does not verify relations, establish consensus, infer meaning, allocate resources, or mutate memory.
-11. No external service is required.
+1. Node identifiers are non-empty and unique.
+2. Relation identifiers are non-empty and unique.
+3. Snapshot is immutable.
+4. Equivalent inputs produce the same canonical ordering, density, and ID.
+5. Changing a node or relation changes structural identity.
+6. A single node has density 0.0.
+7. Empty relation set is valid for a non-empty node set.
+8. No external service is required.
+9. Φ does not imply process, memory, verification, consensus, contribution, meaning, or convergence.
 
 ## Boundary
-
-Genesis creates subjects. Relation creates directed links. Φ represents their canonical topology. Φ-derived coherence may measure structural connectedness, but verification, convergence, meaning, memory, expression, self-knowledge and co-definition remain later concerns.
+Genesis creates nodes. Relation creates directed links. Φ observes the resulting relational structure. Later layers may use Φ as one input to coherence/resonance or convergence.
