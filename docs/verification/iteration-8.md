@@ -1,6 +1,6 @@
 # Iteration 8 — ΦΩ² Resonance Verification
 
-Status: PENDING CI VERIFICATION
+Status: VERIFIED
 
 ## Scope
 
@@ -13,14 +13,17 @@ Status: PENDING CI VERIFICATION
 - Tests: `tests/test_resonance.py`
 - Integration tests: `tests/test_resonance_integration.py`
 
-## Verification target
+## CI verification
 
-The CI run for the current `main` commit must complete successfully with:
-
-- package build: success
-- package install: success
-- runtime smoke test: success
-- complete test suite: success
+- Workflow: `theNet CI`
+- Run: `35755687604`
+- Commit: `ad1ff31ac79d2785bd45f351accbd2b3f27a4bd6`
+- Job: `test`
+- Result: success
+- Package build: success
+- Package install: success
+- Runtime smoke test: success
+- Complete test suite: **526 passed in 4.28s**
 
 ## Contract properties
 
@@ -36,4 +39,6 @@ The CI run for the current `main` commit must complete successfully with:
 
 Φ describes relational structure. Ω² persists memory references. ΦΩ² binds the two references into a deterministic resonance record. Resonance does not itself establish truth, verification, consensus, contribution, meaning, or convergence.
 
-Next architectural layer: Γ convergence.
+## Result
+
+Iteration 8 is closed as verified. The next architectural layer is Γ convergence.
