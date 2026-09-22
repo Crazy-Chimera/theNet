@@ -1,5 +1,6 @@
-from thenet.engine import advance, build_closure
+from thenet.engine import advance, advance_collectively, build_closure
 from src.gamma import create_convergence
+from src.genesis import create_genesis
 from src.proposal import create_proposal
 from src.verification import create_verification
 
@@ -100,3 +101,52 @@ def test_advance_creates_next_immutable_agent_state():
     assert evolved.version == closure.agent_state.version + 1
     assert evolved.singularity_id == "singularity:next"
     assert evolved.id != closure.agent_state.id
+
+
+def test_advance_collectively_requires_explicit_quorum():
+    closure = build_closure(
+        "agent:a",
+        "agent:b",
+        "observation",
+        "adopt verified relation",
+        "direct observation",
+        "expression:1",
+        STAMP,
+    )
+    verifier_c = create_genesis("agent:c", "2026-09-22T13:00:00Z")
+    proposal = create_proposal(
+        closure.agent_state.id,
+        closure.agent_state.id,
+        "collectively advance verified state",
+        "2026-09-22T13:00:30Z",
+    )
+    verifications = [
+        create_verification(
+            proposal.id,
+            closure.target.id,
+            "evidence:b",
+            True,
+            "2026-09-22T13:00:40Z",
+        ),
+        create_verification(
+            proposal.id,
+            verifier_c.id,
+            "evidence:c",
+            True,
+            "2026-09-22T13:00:50Z",
+        ),
+    ]
+
+    result = advance_collectively(
+        closure.agent_state,
+        proposal,
+        verifications,
+        quorum=2,
+        new_singularity_id="singularity:collective-next",
+        created_at="2026-09-22T13:01:00Z",
+    )
+
+    assert result.consensus.reached is True
+    assert len(result.consensus.verifier_ids) == 2
+    assert result.state.version == closure.agent_state.version + 1
+    assert result.state.singularity_id == "singularity:collective-next"
