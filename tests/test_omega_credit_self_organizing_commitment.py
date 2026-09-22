@@ -78,3 +78,49 @@ def test_inputs_remain_unchanged():
 
     assert memory.used == 2.0
     assert compute.used == 4.0
+
+
+def test_commit_is_deterministic_for_same_input():
+    utilities = (_utility("a"), _utility("b"))
+    memory = create_resource_state(10.0, 2.0, "2026-09-22T12:00:00Z")
+    compute = create_resource_state(20.0, 4.0, "2026-09-22T12:00:00Z")
+
+    first = commit_self_organizing_allocation(
+        utilities,
+        memory,
+        compute,
+        {"a": 1.0, "b": 1.0},
+        "2026-09-22T12:01:00Z",
+    )
+    second = commit_self_organizing_allocation(
+        utilities,
+        memory,
+        compute,
+        {"a": 1.0, "b": 1.0},
+        "2026-09-22T12:01:00Z",
+    )
+
+    assert first == second
+
+
+def test_changed_contribution_changes_next_state():
+    utilities = (_utility("a"), _utility("b"))
+    memory = create_resource_state(10.0, 2.0, "2026-09-22T12:00:00Z")
+    compute = create_resource_state(20.0, 4.0, "2026-09-22T12:00:00Z")
+
+    equal = commit_self_organizing_allocation(
+        utilities,
+        memory,
+        compute,
+        {"a": 1.0, "b": 1.0},
+        "2026-09-22T12:01:00Z",
+    )
+    skewed = commit_self_organizing_allocation(
+        utilities,
+        memory,
+        compute,
+        {"a": 1.0, "b": 0.5},
+        "2026-09-22T12:01:00Z",
+    )
+
+    assert equal != skewed
