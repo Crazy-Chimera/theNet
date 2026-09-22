@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from thenet.engine import commit_self_organizing_resources
+from thenet.engine import (
+    commit_ledger_backed_resources_with_record,
+    commit_self_organizing_resources,
+)
+from src.contribution_ledger import create_contribution_ledger
+from src.execution_ledger import ExecutionRecord
+from src.omega_credit import create_omega_credit
 from src.relational_utility import create_relational_utility
 from src.resource_state import create_resource_state
 
@@ -58,3 +64,28 @@ def test_runtime_facade_requires_coherence_for_each_contributor():
             {},
             "2026-09-22T12:01:00Z",
         )
+
+
+def test_runtime_facade_exposes_ledger_backed_provenance():
+    ledger = create_contribution_ledger(
+        [
+            create_omega_credit("a", 0.75, 1.0, 1.0, True, "2026-09-22T12:00:00Z"),
+            create_omega_credit("b", 0.25, 1.0, 1.0, True, "2026-09-22T12:01:00Z"),
+        ]
+    )
+    memory = create_resource_state(100.0, 0.0, "2026-09-22T12:00:00Z")
+    compute = create_resource_state(50.0, 0.0, "2026-09-22T12:00:00Z")
+
+    next_memory, next_compute, record = commit_ledger_backed_resources_with_record(
+        ledger,
+        memory,
+        compute,
+        40.0,
+        20.0,
+        "2026-09-22T12:02:00Z",
+    )
+
+    assert isinstance(record, ExecutionRecord)
+    assert record.contribution_ledger_id == ledger.id
+    assert record.memory_after_id == next_memory.id
+    assert record.compute_after_id == next_compute.id
