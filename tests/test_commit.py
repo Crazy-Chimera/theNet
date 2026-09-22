@@ -107,14 +107,25 @@ def test_result_is_immutable():
         item.proposal_id = "other"
 
 
-def test_defining_changes_change_identity():
+@pytest.mark.parametrize("index", [1, 5, 8])
+def test_defining_changes_change_identity(index):
     base = create_evolution_commit(*BASE)
+    values = list(BASE)
+    values[index] = values[index] + "-changed"
 
-    for index in [0, 1, 5, 8]:
-        values = list(BASE)
-        values[index] = values[index] + "-changed"
-        assert create_evolution_commit(*values).id != base.id
+    assert create_evolution_commit(*values).id != base.id
 
+
+def test_changing_state_lineage_changes_identity():
+    values = list(BASE)
+    values[0] = "state-2"
+    values[2] = "state-2"
+
+    assert create_evolution_commit(*values).id != create_evolution_commit(*BASE).id
+
+
+def test_changing_verification_set_changes_identity():
     values = list(BASE)
     values[3] = ["verification-c"]
-    assert create_evolution_commit(*values).id != base.id
+
+    assert create_evolution_commit(*values).id != create_evolution_commit(*BASE).id
