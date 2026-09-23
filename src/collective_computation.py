@@ -60,7 +60,7 @@ def run_collective_computation_cycle(
     if not verifier_relations:
         raise ValueError("collective computation requires verifier relations")
 
-    phi = create_phi(relation.id for relation in verifier_relations)
+    phi = create_phi(verifier_relations)
     memory = create_memory(
         current_state.subject_id,
         evolution.commit.id,
