@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 import json
 
-from src.evolution_commit import EvolutionCommit
+from src.commit import EvolutionCommit
 from src.omega_credit_verified_receipt import OmegaCreditVerifiedReceipt
 
 
@@ -51,11 +51,7 @@ def create_omega_credit_evolution_receipt_binding(
         "version": 1,
     }
     identifier = sha256(
-        json.dumps(
-            payload,
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
 
     return OmegaCreditEvolutionReceiptBinding(
