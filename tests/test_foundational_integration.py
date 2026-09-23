@@ -1,3 +1,4 @@
+from src.gamma import create_convergence
 from src.genesis import create_genesis
 from src.omega import create_omega_transition
 from src.omega2 import create_omega_memory
@@ -9,7 +10,7 @@ from src.resonance import create_resonance
 STAMP = "2026-09-21T00:00:00Z"
 
 
-def test_foundational_chain_genesis_relation_phi_omega_memory_resonance():
+def test_foundational_chain_genesis_relation_phi_omega_memory_resonance_gamma():
     source = create_genesis("agent:a", STAMP)
     target = create_genesis("agent:b", STAMP)
 
@@ -28,6 +29,10 @@ def test_foundational_chain_genesis_relation_phi_omega_memory_resonance():
     )
     memory = create_omega_memory(transition.id, transition.to_state, STAMP)
     resonance = create_resonance(structure.id, memory.id, STAMP)
+    convergence = create_convergence(
+        [source.id, source.id],
+        source.id,
+    )
 
     assert relation.source_id == source.id
     assert relation.target_id == target.id
@@ -39,6 +44,8 @@ def test_foundational_chain_genesis_relation_phi_omega_memory_resonance():
     assert memory.state_id == source.id
     assert resonance.structure_id == structure.id
     assert resonance.memory_id == memory.id
+    assert convergence.converged is True
+    assert convergence.resolved_id == source.id
 
 
 def test_foundational_chain_preserves_immutable_boundaries():
