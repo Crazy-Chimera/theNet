@@ -1,6 +1,6 @@
 # Iteration 27 — Collective Computation Cycle
 
-Status: IN VERIFICATION
+Status: VERIFIED
 
 ## Scope
 
@@ -37,4 +37,13 @@ The orchestration layer coordinates existing primitives. It does not independent
 
 ## Verification result
 
-This document remains IN VERIFICATION until the current `main` commit has a successful GitHub Actions run covering the complete test suite.
+Verified on GitHub Actions run #394 (`35844060864`) for commit `effcaa30b72ee7e21fdb7c8860b95d2929e925f3`.
+
+The CI job completed successfully with:
+
+- package build: success;
+- package installation: success;
+- runtime smoke test: success;
+- full test suite: `586 passed in 4.46s`.
+
+Iteration 27 is therefore closed as VERIFIED for the tested implementation and test suite.
