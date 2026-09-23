@@ -67,6 +67,25 @@ def test_ledger_mismatch_is_rejected():
     assert audit.reason == "ledger total mismatch"
 
 
+def test_negative_distribution_value_takes_precedence_over_total_mismatch():
+    result = _result()
+    distribution = replace(
+        result.distribution,
+        total_credit=result.distribution.total_credit + 1.0,
+        contributions=(
+            (result.distribution.contributions[0][0], -1.0, 1.0),
+        ),
+    )
+    invalid = replace(result, distribution=distribution)
+
+    audit = audit_omega_credit_conservation(
+        invalid, 0.0, 0.0, 100.0, 200.0
+    )
+
+    assert not audit.valid
+    assert audit.reason == "negative distribution value"
+
+
 def test_distribution_mismatch_is_rejected():
     result = _result()
     distribution = replace(
