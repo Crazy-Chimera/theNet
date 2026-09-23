@@ -2,40 +2,42 @@
 
 ## Purpose
 
-Φ is the structural layer after Relation. It derives a deterministic structural fingerprint from a finite set of relations without changing those relations or asserting semantic truth.
+Φ is the structural layer after Relation. It derives a deterministic structural fingerprint from explicit relations without changing those relations or asserting semantic truth.
 
 ## Input
 
-- relations: a finite collection of immutable Relation-like records.
-- Each relation must expose id, source_id, target_id, and kind.
+- relations: an iterable of Relation objects.
+- Relation fields used: id, source_id, target_id.
 
 ## Output
 
-An immutable Structure containing:
+An immutable PhiStructure containing:
+
 - id
 - relation_ids
 - node_ids
-- edge_count
-- node_count
+- edges: ordered (source_id, target_id) pairs
 - version = 1
+- edge_count and node_count derived from the immutable structure
 
 ## Identity
 
-The structure ID is SHA-256 over a canonical representation of the sorted relation IDs and version. The same relation set therefore produces the same structure identity independent of input order.
+The structure ID is SHA-256 over canonical relation IDs, node IDs, edges, and version. Duplicate input occurrences of the same relation ID are collapsed into one structural edge. Input order does not affect the resulting identity.
 
 ## Invariants
 
-1. Empty relation collections are valid and produce an empty structure.
-2. Every relation ID is a non-empty string.
-3. Duplicate relation IDs are rejected; a structural snapshot must not silently collapse duplicate evidence.
+1. Empty relation collections are valid.
+2. Inputs must contain only Relation objects.
+3. Duplicate relation IDs are deduplicated deterministically.
 4. Input order does not affect identity.
 5. Output is immutable.
-6. The source relation objects are not mutated.
+6. Source Relation objects are not mutated.
 7. Node IDs are derived from relation endpoints and returned in sorted order.
-8. edge_count equals the number of relation IDs.
-9. node_count equals the number of node IDs.
-10. Φ does not claim verification, consensus, contribution, meaning, memory, convergence, or truth.
-11. No external services are required.
+8. Edges are ordered by the sorted unique relation IDs.
+9. edge_count equals the number of structural edges.
+10. node_count equals the number of structural nodes.
+11. Φ does not claim verification, consensus, contribution, meaning, memory, convergence, or truth.
+12. No external services are required.
 
 ## Boundary
 
