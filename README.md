@@ -10,6 +10,10 @@ Genesis → Relation → Φ Structure → Ω Pohyb → Ω² Memory → ΦΩ² Re
 
 The implementation uses deterministic identities, immutable primitives, explicit contracts, and tests as specifications.
 
+## Current evolution path
+
+The Ω-Credit path now extends through distributed contribution, conservation verification, verified receipts, evolution-receipt binding, collective evolution evidence, evidence-integrity auditing, and reference-level evidence verification.
+
 ## Development
 
 - Repository: Crazy-Chimera/theNet
