@@ -52,24 +52,20 @@ def audit_omega_credit_conservation(
     if not math.isclose(credit_sum, ledger_sum, rel_tol=_EPS, abs_tol=_EPS):
         return OmegaCreditConservationAudit(False, "ledger total mismatch")
 
-    if not math.isclose(
-        ledger_sum,
-        result.distribution.total_credit,
-        rel_tol=_EPS,
-        abs_tol=_EPS,
-    ):
-        return OmegaCreditConservationAudit(False, "distribution total mismatch")
-
     if any(
         credit < -_EPS or share < -_EPS
         for _id, credit, share in result.distribution.contributions
     ):
         return OmegaCreditConservationAudit(False, "negative distribution value")
 
-    shares = math.fsum(share for _id, _credit, share in result.distribution.contributions)
+    shares = math.fsum(
+        share for _id, _credit, share in result.distribution.contributions
+    )
     expected_shares = 1.0 if result.distribution.total_credit > _EPS else 0.0
     if not math.isclose(shares, expected_shares, rel_tol=_EPS, abs_tol=_EPS):
-        return OmegaCreditConservationAudit(False, "distribution shares are not normalized")
+        return OmegaCreditConservationAudit(
+            False, "distribution shares are not normalized"
+        )
 
     memory_allocated = math.fsum(
         value for _id, value in result.allocation.memory_by_contributor
@@ -94,6 +90,14 @@ def audit_omega_credit_conservation(
         return OmegaCreditConservationAudit(False, "memory commit mismatch")
     if not math.isclose(compute_delta, compute_allocated, rel_tol=_EPS, abs_tol=_EPS):
         return OmegaCreditConservationAudit(False, "compute commit mismatch")
+
+    if not math.isclose(
+        ledger_sum,
+        result.distribution.total_credit,
+        rel_tol=_EPS,
+        abs_tol=_EPS,
+    ):
+        return OmegaCreditConservationAudit(False, "distribution total mismatch")
 
     if result.distribution.total_credit <= _EPS and (
         abs(memory_delta) > _EPS or abs(compute_delta) > _EPS
