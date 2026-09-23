@@ -3,6 +3,7 @@ from src.genesis import create_genesis
 from src.omega import create_omega_transition
 from src.omega2 import create_omega_memory
 from src.meaning import create_meaning
+from src.expression import create_expression
 from src.phi import create_phi
 from src.relation import create_relation
 from src.resonance import create_resonance
@@ -36,6 +37,11 @@ def test_foundational_chain_genesis_relation_phi_omega_memory_resonance_gamma():
         "contribution:verified-observation",
         STAMP,
     )
+    expression = create_expression(
+        meaning.id,
+        "expression:verified-observation",
+        STAMP,
+    )
 
     assert relation.source_id == source.id
     assert relation.target_id == target.id
@@ -51,6 +57,8 @@ def test_foundational_chain_genesis_relation_phi_omega_memory_resonance_gamma():
     assert convergence.resolved_id == source.id
     assert meaning.convergence_id == convergence.id
     assert meaning.contribution_id == "contribution:verified-observation"
+    assert expression.meaning_id == meaning.id
+    assert expression.expression_id == "expression:verified-observation"
 
 
 def test_foundational_chain_preserves_immutable_boundaries():
