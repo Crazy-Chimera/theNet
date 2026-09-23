@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable
 
+from src.evolution_guard import ensure_not_replayed
+
 from src.agent_state import AgentState
 from src.commit import EvolutionCommit, create_evolution_commit
 from src.consensus import Consensus, create_consensus
@@ -29,6 +31,7 @@ def evolve_collectively(
     quorum: int,
     new_singularity_id: str,
     created_at: str,
+    prior_commits: Iterable[EvolutionCommit] = (),
 ) -> CollectiveEvolution:
     if not isinstance(current_state, AgentState):
         raise ValueError("current_state must be AgentState")
@@ -59,6 +62,8 @@ def evolve_collectively(
         resolved_id=convergence.resolved_id,
         created_at=created_at,
     )
+    ensure_not_replayed(commit, prior_commits)
+
     state = evolve_agent_state(
         current_state,
         commit,
