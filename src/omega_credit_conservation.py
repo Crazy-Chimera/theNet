@@ -61,9 +61,8 @@ def audit_omega_credit_conservation(
         return OmegaCreditConservationAudit(False, "distribution total mismatch")
 
     if any(
-        item.credit < -_EPS or share < -_EPS
+        credit < -_EPS or share < -_EPS
         for _id, credit, share in result.distribution.contributions
-        for item in (type("Credit", (), {"credit": credit})(),)
     ):
         return OmegaCreditConservationAudit(False, "negative distribution value")
 
