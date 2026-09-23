@@ -3,12 +3,13 @@ from src.omega import create_omega_transition
 from src.omega2 import create_omega_memory
 from src.phi import create_phi
 from src.relation import create_relation
+from src.resonance import create_resonance
 
 
 STAMP = "2026-09-21T00:00:00Z"
 
 
-def test_foundational_chain_genesis_relation_phi_omega_memory():
+def test_foundational_chain_genesis_relation_phi_omega_memory_resonance():
     source = create_genesis("agent:a", STAMP)
     target = create_genesis("agent:b", STAMP)
 
@@ -26,6 +27,7 @@ def test_foundational_chain_genesis_relation_phi_omega_memory():
         STAMP,
     )
     memory = create_omega_memory(transition.id, transition.to_state, STAMP)
+    resonance = create_resonance(structure.id, memory.id, STAMP)
 
     assert relation.source_id == source.id
     assert relation.target_id == target.id
@@ -35,6 +37,8 @@ def test_foundational_chain_genesis_relation_phi_omega_memory():
     assert transition.to_state == source.id
     assert memory.transition_id == transition.id
     assert memory.state_id == source.id
+    assert resonance.structure_id == structure.id
+    assert resonance.memory_id == memory.id
 
 
 def test_foundational_chain_preserves_immutable_boundaries():
