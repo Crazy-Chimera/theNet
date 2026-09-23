@@ -29,11 +29,7 @@ def test_foundational_chain_genesis_relation_phi_omega_memory_resonance_gamma():
     )
     memory = create_omega_memory(transition.id, transition.to_state, STAMP)
     resonance = create_resonance(structure.id, memory.id, STAMP)
-    convergence = create_convergence(
-        [source.id, source.id],
-        source.id,
-        STAMP,
-    )
+    convergence = create_convergence([source.id, source.id])
 
     assert relation.source_id == source.id
     assert relation.target_id == target.id
