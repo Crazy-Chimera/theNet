@@ -30,7 +30,7 @@ The latest main commit has a successful CI run with:
 - package build: success
 - package installation: success
 - runtime health smoke test: success
-- tests: 526 passed
+- tests: 592 passed
 
 ## Operational rule
 
