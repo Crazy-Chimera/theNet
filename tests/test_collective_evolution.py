@@ -160,3 +160,26 @@ def test_collective_evolution_rejects_proposer_self_verification():
             new_singularity_id="singularity-1",
             created_at="2026-09-22T00:04:00Z",
         )
+
+
+def test_collective_evolution_rejects_replayed_proposal():
+    state, proposal, verifications = _fixture()
+    first = evolve_collectively(
+        state,
+        proposal,
+        verifications,
+        quorum=2,
+        new_singularity_id="singularity-1",
+        created_at="2026-09-22T00:04:00Z",
+    )
+
+    with pytest.raises(ValueError, match="already been applied"):
+        evolve_collectively(
+            state,
+            proposal,
+            verifications,
+            quorum=2,
+            new_singularity_id="singularity-1",
+            created_at="2026-09-22T00:05:00Z",
+            prior_commits=[first.commit],
+        )
