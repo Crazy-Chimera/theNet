@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="theNet basic relational computation interface">
+  <title>theNet — Basic UI</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">Ω</span>
+        <div>
+          <strong>theNet</strong>
+          <small>collective computation</small>
+        </div>
+      </div>
+
+      <nav aria-label="Primary navigation">
+        <a class="nav-item active" href="#overview">Overview</a>
+        <a class="nav-item" href="#genesis">Genesis</a>
+        <a class="nav-item" href="#relations">Relations</a>
+        <a class="nav-item" href="#events">Events</a>
+      </nav>
+
+      <div class="sidebar-note">
+        <span class="status-dot"></span>
+        Local prototype
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">RELATIONAL COMPUTATION</p>
+          <h1>System surface</h1>
+          <p class="subtitle">Observe and create the foundational entities of theNet.</p>
+        </div>
+        <div class="runtime-badge" id="runtime-status">LOCAL</div>
+      </header>
+
+      <section id="overview" class="section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">OVERVIEW</p>
+            <h2>Current state</h2>
+          </div>
+        </div>
+
+        <div class="metrics">
+          <article class="metric">
+            <span>Genesis states</span>
+            <strong id="genesis-count">0</strong>
+          </article>
+          <article class="metric">
+            <span>Relations</span>
+            <strong id="relation-count">0</strong>
+          </article>
+          <article class="metric">
+            <span>Events</span>
+            <strong id="event-count">0</strong>
+          </article>
+          <article class="metric">
+            <span>Integrity</span>
+            <strong class="positive">READY</strong>
+          </article>
+        </div>
+      </section>
+
+      <section id="genesis" class="section grid-two">
+        <article class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">01 · GENESIS</p>
+              <h2>Create a state</h2>
+            </div>
+          </div>
+
+          <form id="genesis-form">
+            <label>
+              Subject
+              <input id="genesis-subject" name="subject" required placeholder="e.g. Agent Ω">
+            </label>
+            <label>
+              Created at
+              <input id="genesis-created-at" name="createdAt" required type="datetime-local">
+            </label>
+            <button type="submit">Create Genesis</button>
+          </form>
+          <p class="form-note">Prototype only: the result remains in browser memory.</p>
+        </article>
+
+        <article class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">STATE</p>
+              <h2>Selected Genesis</h2>
+            </div>
+          </div>
+          <div id="selected-genesis" class="empty-state">No Genesis selected.</div>
+        </article>
+      </section>
+
+      <section id="relations" class="section grid-two">
+        <article class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">02 · RELATION</p>
+              <h2>Create a relation</h2>
+            </div>
+          </div>
+
+          <form id="relation-form">
+            <label>
+              Source
+              <select id="relation-source" required></select>
+            </label>
+            <label>
+              Target
+              <select id="relation-target" required></select>
+            </label>
+            <label>
+              Kind
+              <input id="relation-kind" required placeholder="e.g. observes">
+            </label>
+            <label>
+              Created at
+              <input id="relation-created-at" required type="datetime-local">
+            </label>
+            <button type="submit">Create Relation</button>
+          </form>
+          <p class="form-note">Relations are directed: reversing source and target changes identity.</p>
+        </article>
+
+        <article class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">GRAPH</p>
+              <h2>Relations</h2>
+            </div>
+          </div>
+          <div id="relation-list" class="list empty-state">No relations yet.</div>
+        </article>
+      </section>
+
+      <section id="events" class="section">
+        <article class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">EVENT STREAM</p>
+              <h2>Visible state changes</h2>
+            </div>
+          </div>
+          <div id="event-list" class="events empty-state">No events yet.</div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
