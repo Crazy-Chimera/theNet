@@ -284,6 +284,48 @@ def test_control_room_reproducibility_returns_fingerprints():
 
 
 
+def test_control_room_ledger_persists_and_is_idempotent():
+    server, thread = start_server()
+    try:
+        payload = {
+            "created_at": "2026-09-30T11:00:00Z",
+            "cases": [
+                {"id": "a", "cycle_index": 2, "proposal_text": "alternative A"},
+                {"id": "b", "cycle_index": 3, "proposal_text": "alternative B"},
+            ],
+        }
+        request = Request(
+            f"http://127.0.0.1:{server.server_port}/v1/control/ledger",
+            data=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(request) as response:
+            first = json.load(response)
+            assert response.status == 200
+            ledger_id = first["id"]
+            assert ledger_id == first["fingerprint"]["result_fingerprint"]
+
+        request = Request(
+            f"http://127.0.0.1:{server.server_port}/v1/control/ledger/{ledger_id}"
+        )
+        with urlopen(request) as response:
+            stored = json.load(response)
+            assert stored["id"] == ledger_id
+            assert stored["fingerprint"] == first["fingerprint"]
+            assert stored["matrix"] == first["matrix"]
+
+        request = Request(
+            f"http://127.0.0.1:{server.server_port}/v1/control/ledger"
+        )
+        with urlopen(request) as response:
+            listing = json.load(response)
+            assert any(item["id"] == ledger_id for item in listing["records"])
+    finally:
+        stop_server(server, thread)
+
+
+
 def test_control_room_query_traces_evidence_path():
     server, thread = start_server()
     try:
