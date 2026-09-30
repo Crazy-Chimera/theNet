@@ -74,7 +74,11 @@ def run_network_lifecycle_mvp(
     phases.append("PEER_DISCOVERY")
 
     for handshake in boot.handshakes:
-        runtime.register_handshake(handshake, created_at=created_at)
+        try:
+            runtime.register_handshake(handshake, created_at=created_at)
+        except ValueError as exc:
+            if "replay" not in str(exc):
+                raise
     phases.append("HANDSHAKE")
     phases.append("SESSION")
 
