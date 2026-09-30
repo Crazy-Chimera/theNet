@@ -21,10 +21,6 @@ class ExperimentFingerprint:
     runtime_contract: str = RUNTIME_CONTRACT
     version: int = FINGERPRINT_VERSION
 
-    @property
-    def reproducible(self) -> bool:
-        return self.design_fingerprint == self.result_fingerprint
-
     def as_dict(self) -> dict:
         return asdict(self)
 
