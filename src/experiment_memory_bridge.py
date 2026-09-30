@@ -1,18 +1,21 @@
-"""Bridge verified Experiment Ledger records into immutable Ω² Memory."""
+"""Bridge independently reproduced experiment records into immutable Ω² Memory."""
 
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 
+from src.counterfactual_reproducibility import compare_fingerprints
 from src.experiment_ledger import ExperimentLedgerRecord
 from src.memory import MemoryRecord, create_memory
 
 
 @dataclass(frozen=True)
 class ExperimentMemoryBridge:
-    ledger_id: str
-    memory: MemoryRecord
-    verification_id: str
+    baseline_record_id: str
+    verification_record_id: str
+    memory: MemoryRecord | None
+    verified: bool
+    reason: str
     version: int = 1
 
     def as_dict(self) -> dict:
@@ -21,28 +24,52 @@ class ExperimentMemoryBridge:
 
 def bridge_verified_experiment_to_memory(
     *,
-    ledger: ExperimentLedgerRecord,
+    baseline: ExperimentLedgerRecord,
+    verification: ExperimentLedgerRecord,
     subject_id: str,
-    verification_id: str,
     created_at: str,
 ) -> ExperimentMemoryBridge:
-    if not isinstance(ledger, ExperimentLedgerRecord):
-        raise TypeError("ledger must be ExperimentLedgerRecord")
-    if not isinstance(verification_id, str) or not verification_id.strip():
-        raise ValueError("verification_id must be non-empty")
-    if ledger.fingerprint.result_fingerprint != ledger.id:
-        raise ValueError("ledger fingerprint does not match ledger identity")
+    if not isinstance(baseline, ExperimentLedgerRecord):
+        raise TypeError("baseline must be ExperimentLedgerRecord")
+    if not isinstance(verification, ExperimentLedgerRecord):
+        raise TypeError("verification must be ExperimentLedgerRecord")
+
+    if baseline.id == verification.id:
+        return ExperimentMemoryBridge(
+            baseline.id, verification.id, None, False,
+            "verification record must be distinct",
+        )
+
+    if baseline.fingerprint.result_fingerprint != baseline.id:
+        raise ValueError("baseline fingerprint does not match ledger identity")
+    if verification.fingerprint.result_fingerprint != verification.id:
+        raise ValueError("verification fingerprint does not match ledger identity")
+
+    comparison = compare_fingerprints(
+        baseline.fingerprint,
+        verification.fingerprint,
+    )
+    verified = (
+        comparison["same_design"]
+        and comparison["same_result"]
+        and comparison["same_baseline"]
+        and comparison["same_runtime_contract"]
+    )
+    if not verified:
+        return ExperimentMemoryBridge(
+            baseline.id, verification.id, None, False,
+            "independent ledger reproduction does not match",
+        )
 
     memory = create_memory(
         subject_id=subject_id,
-        source_id=ledger.id,
+        source_id=baseline.id,
         kind="verified-experiment",
         created_at=created_at,
     )
     return ExperimentMemoryBridge(
-        ledger_id=ledger.id,
-        memory=memory,
-        verification_id=verification_id,
+        baseline.id, verification.id, memory, True,
+        "independently reproduced experiment",
     )
 
 
