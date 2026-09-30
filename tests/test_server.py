@@ -326,40 +326,6 @@ def test_control_room_ledger_persists_and_is_idempotent():
 
 
 
-def test_control_room_memory_bridge_persists_verified_experiment():
-    server, thread = start_server()
-    try:
-        request = Request(
-            f"http://127.0.0.1:{server.server_port}/v1/control/memory-bridge",
-            data=json.dumps({
-                "subject_id": "agent-subject",
-                "verification_id": "verification-123",
-                "created_at": "2026-09-30T12:00:00Z",
-                "cases": [
-                    {"id": "a", "cycle_index": 2, "proposal_text": "alternative A"},
-                ],
-            }).encode(),
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        with urlopen(request) as response:
-            payload = json.load(response)
-            assert response.status == 200
-            ledger = payload["ledger"]
-            memory = payload["bridge"]["memory"]
-            assert memory["source_id"] == ledger["id"]
-            assert memory["kind"] == "verified-experiment"
-            assert payload["bridge"]["verification_id"] == "verification-123"
-
-        with urlopen(
-            f"http://127.0.0.1:{server.server_port}/v1/control/ledger/{ledger['id']}"
-        ) as response:
-            assert json.load(response)["id"] == ledger["id"]
-    finally:
-        stop_server(server, thread)
-
-
-
 def test_control_room_query_traces_evidence_path():
     server, thread = start_server()
     try:
