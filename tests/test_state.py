@@ -2,74 +2,85 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
+from src.genesis import create_genesis
+from src.relation import create_relation
 from src.state import create_state, observe
+from src.user_flow import add_relation, start_user_flow
 
 
-def test_create_empty_state():
-    state = create_state("flow:1", "agent:a")
+STAMP = "2026-09-30T00:00:00Z"
 
-    assert state.flow_id == "flow:1"
+
+def test_user_flow_to_state():
+    flow = start_user_flow("request:1", "agent:a", STAMP)
+
+    state = create_state(flow)
+
+    assert state.flow_id == flow.id
+    assert state.context_id == flow.context.id
     assert state.subject_id == "agent:a"
-    assert state.events == ()
-    assert state.version == 1
-    assert len(state.id) == 64
+    assert state.stage == "GENESIS"
+    assert state.relation_ids == ()
+
+
+def test_relation_flow_produces_new_state():
+    flow = start_user_flow("request:1", "agent:a", STAMP)
+    relation = create_relation(flow.context.genesis.id, "agent:b", "trust", STAMP)
+
+    next_flow = add_relation(flow, relation)
+    first = create_state(flow)
+    second = create_state(next_flow)
+
+    assert first.id != second.id
+    assert second.stage == "RELATION"
+    assert second.relation_ids == (relation.id,)
 
 
 def test_state_is_deterministic():
-    events = ("event:1", "event:2")
+    flow = start_user_flow("request:1", "agent:a", STAMP)
 
-    assert create_state("flow:1", "agent:a", events) == create_state(
-        "flow:1", "agent:a", events
-    )
-
-
-def test_event_order_is_part_of_state_identity():
-    first = create_state("flow:1", "agent:a", ("event:1", "event:2"))
-    second = create_state("flow:1", "agent:a", ("event:2", "event:1"))
-
-    assert first.id != second.id
-
-
-@pytest.mark.parametrize(
-    ("flow_id", "subject_id"),
-    [("", "agent:a"), ("flow:1", "")],
-)
-def test_required_text_is_validated(flow_id, subject_id):
-    with pytest.raises(ValueError):
-        create_state(flow_id, subject_id)
-
-
-def test_events_are_validated():
-    with pytest.raises(TypeError):
-        create_state("flow:1", "agent:a", ["event:1"])
-
-    with pytest.raises(ValueError):
-        create_state("flow:1", "agent:a", ("event:1", ""))
+    assert create_state(flow) == create_state(flow)
 
 
 def test_state_is_immutable():
-    state = create_state("flow:1", "agent:a")
+    flow = start_user_flow("request:1", "agent:a", STAMP)
+    state = create_state(flow)
 
     with pytest.raises(FrozenInstanceError):
-        state.flow_id = "flow:2"
+        state.stage = "OTHER"
+
+
+def test_create_state_requires_user_flow():
+    with pytest.raises(TypeError):
+        create_state("flow:1")
 
 
 def test_observe_is_pure_and_deterministic():
-    state = create_state("flow:1", "agent:a", ("event:1", "event:2"))
+    flow = start_user_flow("request:1", "agent:a", STAMP)
+    state = create_state(flow)
 
     first = observe(state)
     second = observe(state)
 
     assert first == second
     assert first.state_id == state.id
-    assert first.event_count == 2
-    assert first.events == state.events
+    assert first.subject_id == "agent:a"
+    assert first.stage == "GENESIS"
+    assert first.relation_count == 0
 
 
-def test_observe_does_not_change_state():
-    state = create_state("flow:1", "agent:a", ("event:1",))
+def test_observe_relation_state():
+    flow = start_user_flow("request:1", "agent:a", STAMP)
+    relation = create_relation(flow.context.genesis.id, "agent:b", "trust", STAMP)
+    flow = add_relation(flow, relation)
 
-    before = state
-    observe(state)
+    observation = observe(create_state(flow))
 
-    assert state == before
+    assert observation.stage == "RELATION"
+    assert observation.relation_count == 1
+    assert observation.relation_ids == (relation.id,)
+
+
+def test_observe_requires_state():
+    with pytest.raises(TypeError):
+        observe(None)
