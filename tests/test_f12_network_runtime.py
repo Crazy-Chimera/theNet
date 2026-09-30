@@ -51,7 +51,7 @@ def test_session_heartbeat_and_reconnect(tmp_path):
     session=runtime.register_handshake(boot.handshakes[0],created_at="2026-09-30T00:10:00Z")
     assert runtime.last_heartbeat(session.session_id) is None
     updated=runtime.heartbeat(session.session_id,seen_at="2026-09-30T00:11:00Z")
-    assert updated.created_at=="2026-09-30T00:11:00Z"
+    assert updated.created_at=="2026-09-30T00:10:00Z"
     assert runtime.last_heartbeat(session.session_id)=="2026-09-30T00:11:00Z"
 
 def test_stale_snapshot_can_be_detected_after_membership_change(tmp_path):
