@@ -254,6 +254,51 @@ async function runStateDiff() {
   }
 }
 
+async function runImpactVector() {
+  const button = $("run-impact-vector");
+  const result = $("impact-vector-result");
+  const cycleIndex = Number($("counterfactual-cycle").value);
+  const proposalText = $("counterfactual-proposal").value.trim();
+  if (!proposalText) {
+    addEvent("ERROR", "Counterfactual proposal is required.");
+    return;
+  }
+  button.disabled = true;
+  button.textContent = "Computing…";
+  try {
+    const data = await api("/v1/control/impact-vector", {
+      cycle_index: cycleIndex,
+      proposal_text: proposalText
+    });
+    const impact = data.impact_vector;
+    const vectors = impact.vectors || [];
+    result.className = "impact-vector-result";
+    result.innerHTML =
+      '<div class="trace-summary">' +
+      '<div><small>First divergence</small><strong>C' + text(impact.first_divergence_cycle) +
+      ' · ' + text(impact.first_divergence_artifact) + '</strong></div>' +
+      '<div><small>Aggregate Δutility</small><strong>' + formatNumber(impact.aggregate.delta_utility) + '</strong></div>' +
+      '<div><small>Aggregate ΔΩ-credit</small><strong>' + formatNumber(impact.aggregate.delta_omega_credit) + '</strong></div>' +
+      '</div>' +
+      '<div class="impact-vector-grid">' +
+      '<div class="impact-vector-head"><span>Cycle</span><span>ΔK</span><span>ΔC</span><span>ΔR</span><span>ΔΦ</span><span>ΔU</span><span>ΔΩ</span><span>ΔMem</span><span>ΔCompute</span><span>Fields</span></div>' +
+      vectors.map(function(v) {
+        return '<div class="impact-vector-row"><span>C' + text(v.cycle_index) + '</span>' +
+          '<span>' + formatNumber(v.delta_k) + '</span><span>' + formatNumber(v.delta_c) + '</span>' +
+          '<span>' + text(v.delta_r) + '</span><span>' + formatNumber(v.delta_phi) + '</span>' +
+          '<span>' + formatNumber(v.delta_utility) + '</span><span>' + formatNumber(v.delta_omega_credit) + '</span>' +
+          '<span>' + formatNumber(v.delta_memory_available) + '</span><span>' + formatNumber(v.delta_compute_available) + '</span>' +
+          '<span>' + text(v.changed_fields) + '</span></div>';
+      }).join("") +
+      '</div>';
+  } catch (error) {
+    addEvent("ERROR", error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Compute impact vector";
+  }
+}
+
 async function runCausalTrace() {
   const button = $("run-causal-trace");
   const result = $("causal-trace-result");
@@ -657,6 +702,7 @@ $("run-replay").addEventListener("click", runReplay);
 $("run-counterfactual").addEventListener("click", runCounterfactual);
 $("run-causal-trace").addEventListener("click", runCausalTrace);
 $("run-state-diff").addEventListener("click", runStateDiff);
+$("run-impact-vector").addEventListener("click", runImpactVector);
 
 $("genesis-created-at").value = nowInputValue();
 $("relation-created-at").value = nowInputValue();
