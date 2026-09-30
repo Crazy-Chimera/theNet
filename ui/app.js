@@ -8,7 +8,8 @@ const state = {
   replay: null,
   counterfactual: null,
   causalTrace: null,
-  query: null
+  query: null,
+  networkLifecycle: null
 };
 
 const $ = (id) => document.getElementById(id);
@@ -751,6 +752,52 @@ function renderGraphs() {
   });
 }
 
+
+function renderNetworkLifecycle(data) {
+  const target = $("network-lifecycle-result");
+  const pipeline = $("network-pipeline");
+  state.networkLifecycle = data;
+  pipeline.innerHTML = data.phases.map(function(phase, index) {
+    return '<span>' + text(phase) + '</span>' +
+      (index < data.phases.length - 1 ? '<i>→</i>' : '');
+  }).join("");
+  target.className = "panel";
+  target.innerHTML =
+    '<div class="panel-heading"><div><p class="eyebrow">LIVE MVP RUN</p><h3>' +
+    text(data.version) + '</h3></div><span class="tag tag-ok">COMPLETED</span></div>' +
+    '<div class="network-summary">' +
+      '<div><small>NETWORK</small><code>' + text(data.network_id) + '</code></div>' +
+      '<div><small>EPOCH</small><strong>' + text(data.epoch) + '</strong></div>' +
+      '<div><small>AGENTS</small><strong>' + text(data.active_agents.length) + '</strong></div>' +
+      '<div><small>QUORUM</small><strong>' + text(data.snapshot.quorum) + '</strong></div>' +
+    '</div>' +
+    '<div class="network-chain">' +
+      '<div><small>SNAPSHOT</small><code>' + text(data.snapshot.snapshot_id) + '</code></div>' +
+      '<div><small>ANNOUNCEMENT</small><code>' + text(data.announcement.announcement_id) + '</code></div>' +
+      '<div><small>COORDINATION</small><code>' + text(data.coordination.coordination_id) + '</code></div>' +
+      '<div><small>OUTCOME</small><code>' + text(data.outcome.outcome_id) + '</code></div>' +
+    '</div>';
+}
+
+async function runNetworkLifecycle() {
+  const button = $("run-network-lifecycle");
+  button.disabled = true;
+  button.textContent = "Running…";
+  try {
+    const data = await api("/v1/network/lifecycle", {
+      proposal_text: "Advance verified relational state.",
+      created_at: new Date().toISOString()
+    });
+    renderNetworkLifecycle(data);
+    await loadState();
+  } catch (error) {
+    addEvent("ERROR", error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Run theNet 3.0";
+  }
+}
+
 function render() {
   $("genesis-count").textContent = state.genesis.length;
   $("relation-count").textContent = state.relations.length;
@@ -838,3 +885,4 @@ $("closure-form").addEventListener("submit", async (event) => {
 loadState().catch((error) => addEvent("ERROR", error.message));
 
 $("run-control-demo").addEventListener("click", runControlDemo);
+$("run-network-lifecycle").addEventListener("click", runNetworkLifecycle);
