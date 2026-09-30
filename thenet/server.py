@@ -52,13 +52,13 @@ class ThreadingHTTPServer(_ThreadingHTTPServer):
 class RuntimeHandler(BaseHTTPRequestHandler):
     """Expose theNet engine and browser UI through one public HTTP boundary."""
 
-    server_version = "theNet/0.2"
+    server_version = "theNet/0.1"
 
     def do_GET(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
 
         if path == "/health":
-            self._json(HTTPStatus.OK, {"status": "ready", "version": "0.2.0"})
+            self._json(HTTPStatus.OK, {"status": "ready", "version": "0.1.0"})
             return
 
         if path == "/v1/state":
@@ -107,7 +107,8 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             subject=self._required_string(payload, "subject"),
             created_at=self._required_string(payload, "created_at"),
         )
-        self.server.store.save_genesis(result)
+        with _STATE_LOCK:
+            self.server.store.save_genesis(result)
         serialized = asdict(result)
         serialized["relations"] = list(serialized["relations"])
         with _STATE_LOCK:
@@ -121,7 +122,8 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             kind=self._required_string(payload, "kind"),
             created_at=self._required_string(payload, "created_at"),
         )
-        self.server.store.save_relation(result)
+        with _STATE_LOCK:
+            self.server.store.save_relation(result)
         serialized = asdict(result)
         with _STATE_LOCK:
             _STATE["events"].insert(0, self._event("RELATION", f"Created {result.kind} relation"))
@@ -137,9 +139,10 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             expression_id=self._required_string(payload, "expression_id"),
             created_at=self._required_string(payload, "created_at"),
         )
-        self.server.store.save_genesis(closure.source)
-        self.server.store.save_genesis(closure.target)
-        self.server.store.save_relation(closure.relation)
+        with _STATE_LOCK:
+            self.server.store.save_genesis(closure.source)
+            self.server.store.save_genesis(closure.target)
+            self.server.store.save_relation(closure.relation)
         result = asdict(closure)
         with _STATE_LOCK:
             _STATE["closures"].append(result)
