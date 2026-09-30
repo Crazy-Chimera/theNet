@@ -29,7 +29,7 @@ from src.postgres_store import PostgresStore
 from src.relation import create_relation
 from src.sqlite_store import SQLiteStore
 from thenet.engine import build_closure, run_recursive_convergence_mvp
-from src.network_lifecycle import run_network_lifecycle_mvp
+from src.network_lifecycle import NetworkLifecycleService, run_network_lifecycle_mvp
 from tempfile import TemporaryDirectory
 
 UI_ROOT = Path(__file__).resolve().parents[1] / "ui"
@@ -55,6 +55,7 @@ class ThreadingHTTPServer(_ThreadingHTTPServer):
     def __init__(self, server_address, RequestHandlerClass, store=None):
         super().__init__(server_address, RequestHandlerClass)
         self.store = store or create_runtime_store()
+        self.network_lifecycle = None
 
     def server_close(self) -> None:
         try:
@@ -110,6 +111,8 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             "/v1/genesis": self._create_genesis,
             "/v1/relations": self._create_relation,
             "/v1/network/lifecycle": self._network_lifecycle,
+            "/v1/network/leave": self._network_leave,
+            "/v1/network/snapshot": self._network_snapshot,
             "/v1/closure": self._build_closure,
             "/v1/control/demo": self._control_demo,
             "/v1/control/query": self._control_query,
@@ -143,24 +146,64 @@ class RuntimeHandler(BaseHTTPRequestHandler):
     def log_message(self, _format: str, *_args: object) -> None:
         return
 
-    def _network_lifecycle(self, payload: dict[str, Any]) -> dict[str, Any]:
-        """Run the complete isolated theNet 3.0 lifecycle MVP."""
-        created_at = self._required_string(payload, "created_at")
-        proposal_text = self._required_string(payload, "proposal_text")
-        with TemporaryDirectory(prefix="thenet3-") as workdir:
-            result = run_network_lifecycle_mvp(
-                database=Path(workdir) / "runtime.db",
-                vault_path=Path(workdir) / "vault",
-                password="thenet3-mvp",
+    def _network_service(self, *, created_at: str, proposal_text: str) -> NetworkLifecycleService:
+        service = self.server.network_lifecycle
+        if service is None:
+            service = NetworkLifecycleService(
+                database=os.getenv("THENET_NETWORK_RUNTIME_DB", "/tmp/thenet-network-runtime.db"),
+                vault_path=os.getenv("THENET_NETWORK_VAULT_PATH", "/tmp/thenet-network-vault"),
+                password=os.getenv("THENET_NETWORK_PASSWORD", "thenet3-mvp"),
                 created_at=created_at,
                 proposal_text=proposal_text,
             )
+            self.server.network_lifecycle = service
+        return service
+
+    def _network_lifecycle(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Run the lifecycle against the process-persistent F12 network runtime."""
+        created_at = self._required_string(payload, "created_at")
+        proposal_text = self._required_string(payload, "proposal_text")
+        result = self._network_service(created_at=created_at, proposal_text=proposal_text).run(
+            created_at=created_at, proposal_text=proposal_text
+        )
         with _STATE_LOCK:
             _STATE["events"].insert(
                 0,
                 self._event("NETWORK_LIFECYCLE", f"theNet 3.0 lifecycle completed: {result.network_id}"),
             )
         return asdict(result)
+
+    def _network_leave(self, payload: dict[str, Any]) -> dict[str, Any]:
+        agent_id = self._required_string(payload, "agent_id")
+        created_at = self._required_string(payload, "created_at")
+        service = self._network_service(
+            created_at=created_at,
+            proposal_text=payload.get("proposal_text", "network lifecycle"),
+        )
+        service.remove_agent(agent_id)
+        snapshot = service.snapshot(created_at=created_at)
+        return {
+            "network_id": service.bootstrap.network.network_id,
+            "removed_agent": agent_id,
+            "snapshot": asdict(snapshot),
+            "active_agents": [item.agent_id for item in service.runtime.active_members()],
+            "membership_events": [list(item) for item in service.runtime.membership_events()],
+        }
+
+    def _network_snapshot(self, payload: dict[str, Any]) -> dict[str, Any]:
+        created_at = self._required_string(payload, "created_at")
+        service = self._network_service(
+            created_at=created_at,
+            proposal_text=payload.get("proposal_text", "network lifecycle"),
+        )
+        snapshot = service.snapshot(created_at=created_at)
+        return {
+            "network_id": service.bootstrap.network.network_id,
+            "snapshot": asdict(snapshot),
+            "active_agents": [item.agent_id for item in service.runtime.active_members()],
+            "sessions": [asdict(item) for item in service.runtime.sessions()],
+            "membership_events": [list(item) for item in service.runtime.membership_events()],
+        }
 
     def _create_genesis(self, payload: dict[str, Any]) -> dict[str, Any]:
         result = create_genesis(
