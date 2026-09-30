@@ -1,8 +1,7 @@
 import json
-import os
 import threading
 from urllib.error import HTTPError
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 import pytest
 
@@ -16,28 +15,44 @@ def start_server():
     return server, thread
 
 
+def stop_server(server, thread):
+    server.shutdown()
+    thread.join(timeout=2)
+    server.server_close()
+
+
 def test_runtime_health_endpoint():
     server, thread = start_server()
     try:
         with urlopen(f"http://127.0.0.1:{server.server_port}/health") as response:
             assert response.status == 200
-            assert json.load(response) == {"status": "ready"}
+            assert json.load(response)["status"] == "ready"
     finally:
-        server.shutdown()
-        thread.join(timeout=2)
-        server.server_close()
+        stop_server(server, thread)
 
 
-def test_runtime_root_endpoint():
+def test_runtime_root_serves_public_ui():
     server, thread = start_server()
     try:
         with urlopen(f"http://127.0.0.1:{server.server_port}/") as response:
+            body = response.read().decode("utf-8")
             assert response.status == 200
-            assert json.load(response) == {"service": "theNet", "status": "ready"}
+            assert response.headers["Content-Type"].startswith("text/html")
+            assert "theNet" in body
+            assert "closure-form" in body
     finally:
-        server.shutdown()
-        thread.join(timeout=2)
-        server.server_close()
+        stop_server(server, thread)
+
+
+def test_runtime_state_endpoint():
+    server, thread = start_server()
+    try:
+        with urlopen(f"http://127.0.0.1:{server.server_port}/v1/state") as response:
+            payload = json.load(response)
+            assert response.status == 200
+            assert set(payload) == {"genesis", "relations", "closures", "events"}
+    finally:
+        stop_server(server, thread)
 
 
 def test_runtime_unknown_path_is_not_found():
@@ -48,15 +63,12 @@ def test_runtime_unknown_path_is_not_found():
         assert error.value.code == 404
         assert json.load(error.value) == {"status": "not_found"}
     finally:
-        server.shutdown()
-        thread.join(timeout=2)
-        server.server_close()
+        stop_server(server, thread)
 
 
 @pytest.mark.parametrize("value", ["0", "65536", "not-a-port"])
 def test_runtime_port_rejects_invalid_values(monkeypatch, value):
     monkeypatch.setenv("PORT", value)
-
     with pytest.raises(ValueError):
         runtime_port()
 
