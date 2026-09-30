@@ -17,10 +17,16 @@ class RuntimeStore(Protocol):
     def get_genesis(self, state_id: str) -> GenesisState | None:
         ...
 
+    def list_genesis(self) -> tuple[GenesisState, ...]:
+        ...
+
     def save_relation(self, relation: Relation) -> None:
         ...
 
     def get_relation(self, relation_id: str) -> Relation | None:
+        ...
+
+    def list_relations(self) -> tuple[Relation, ...]:
         ...
 
     def close(self) -> None:
