@@ -761,24 +761,60 @@ function renderNetworkLifecycle(data) {
     return '<span>' + text(phase) + '</span>' +
       (index < data.phases.length - 1 ? '<i>→</i>' : '');
   }).join("");
+
+  const agents = data.active_agents || [];
+  const peers = data.peer_counts || {};
+  const sessions = data.sessions || [];
+  const snapshotMembers = (data.snapshot && data.snapshot.members) || [];
+  const verifierIds = (data.coordination && data.coordination.verifier_ids) || [];
+
   target.className = "panel";
   target.innerHTML =
     '<div class="panel-heading"><div><p class="eyebrow">LIVE MVP RUN</p><h3>' +
     text(data.version) + '</h3></div><span class="tag tag-ok">COMPLETED</span></div>' +
+
     '<div class="network-summary">' +
       '<div><small>NETWORK</small><code>' + text(data.network_id) + '</code></div>' +
       '<div><small>EPOCH</small><strong>' + text(data.epoch) + '</strong></div>' +
-      '<div><small>AGENTS</small><strong>' + text(data.active_agents.length) + '</strong></div>' +
+      '<div><small>ACTIVE AGENTS</small><strong>' + text(agents.length) + '</strong></div>' +
       '<div><small>QUORUM</small><strong>' + text(data.snapshot.quorum) + '</strong></div>' +
     '</div>' +
+
+    '<div class="network-runtime-grid">' +
+      '<article><small>MEMBERSHIP SNAPSHOT</small><strong>' + text(snapshotMembers.join(" · ")) + '</strong></article>' +
+      '<article><small>VERIFIERS</small><strong>' + text(verifierIds.join(" · ")) + '</strong></article>' +
+      '<article><small>SESSIONS</small><strong>' + text(sessions.length) + '</strong></article>' +
+      '<article><small>PEER LINKS</small><strong>' +
+        text(Object.entries(peers).map(function(entry) { return entry[0] + ": " + entry[1]; }).join(" · ")) +
+      '</strong></article>' +
+    '</div>' +
+
+    '<div class="network-agents">' +
+      '<div class="panel-heading"><div><p class="eyebrow">MEMBERS</p><h3>Active network agents</h3></div></div>' +
+      agents.map(function(agent) {
+        return '<div class="network-agent-row">' +
+          '<code>' + text(agent) + '</code>' +
+          '<span class="tag tag-ok">' + (verifierIds.includes(agent) ? 'VERIFIER' : agent === data.coordination.proposer_id ? 'PROPOSER' : 'MEMBER') + '</span>' +
+          '<span class="network-peer-count">peers ' + text(peers[agent] ?? 0) + '</span>' +
+        '</div>';
+      }).join("") +
+    '</div>' +
+
     '<div class="network-chain">' +
       '<div><small>SNAPSHOT</small><code>' + text(data.snapshot.snapshot_id) + '</code></div>' +
       '<div><small>ANNOUNCEMENT</small><code>' + text(data.announcement.announcement_id) + '</code></div>' +
       '<div><small>COORDINATION</small><code>' + text(data.coordination.coordination_id) + '</code></div>' +
       '<div><small>OUTCOME</small><code>' + text(data.outcome.outcome_id) + '</code></div>' +
+    '</div>' +
+
+    '<div class="network-chain">' +
+      '<div><small>EXECUTION</small><code>' + text(data.outcome.execution_id) + '</code></div>' +
+      '<div><small>UTILITY</small><code>' + text(data.outcome.utility_id) + '</code></div>' +
+      '<div><small>Ω-CREDIT</small><code>' + text(data.outcome.credit_id) + '</code></div>' +
+      '<div><small>MEMORY</small><code>' + text(data.outcome.memory_id) + '</code></div>' +
+      '<div><small>AGENT STATE</small><code>' + text(data.outcome.state_id) + '</code></div>' +
     '</div>';
 }
-
 async function runNetworkLifecycle() {
   const button = $("run-network-lifecycle");
   button.disabled = true;
