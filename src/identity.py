@@ -51,6 +51,20 @@ def _did(public_key: bytes) -> str:
     return f"did:{_DID_METHOD}:{sha256(public_key).hexdigest()}"
 
 
+def verify_signature(identity: Identity, message: str | bytes, signature: Signature) -> bool:
+    if not isinstance(identity, Identity) or not isinstance(signature, Signature):
+        raise TypeError("identity and signature are required")
+    payload = _message_bytes(message)
+    if signature.did != identity.did:
+        return False
+    try:
+        public_key = Ed25519PublicKey.from_public_bytes(_unb64(identity.public_key))
+        public_key.verify(_unb64(signature.signature), payload)
+    except (InvalidSignature, ValueError):
+        return False
+    return True
+
+
 def _message_bytes(message: str | bytes) -> bytes:
     if isinstance(message, str):
         return message.encode("utf-8")
@@ -192,20 +206,7 @@ class IdentityVault:
         message: str | bytes,
         signature: Signature,
     ) -> bool:
-        payload = _message_bytes(message)
-        if signature.did != identity.did:
-            return False
-        try:
-            public_key = Ed25519PublicKey.from_public_bytes(
-                _unb64(identity.public_key)
-            )
-            public_key.verify(
-                _unb64(signature.signature),
-                payload,
-            )
-        except (InvalidSignature, ValueError):
-            return False
-        return True
+        return verify_signature(identity, message, signature)
 
 
-__all__ = ["Identity", "IdentityVault", "Signature"]
+__all__ = ["Identity", "IdentityVault", "Signature", "verify_signature"]
