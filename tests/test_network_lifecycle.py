@@ -55,12 +55,12 @@ def test_network_lifecycle_service_persists_membership_and_snapshot_epoch(tmp_pa
     assert second.members == ("agent-0", "agent-1")
     assert second.quorum == 1
 
-    reopened = NetworkLifecycleService(
-        database=tmp_path / "runtime.db",
-        vault_path=tmp_path / "vault-2",
-        password="test-password",
+    from src.network_runtime import NetworkRuntime
+
+    reopened = NetworkRuntime(
+        tmp_path / "runtime.db",
+        service.bootstrap.network,
         created_at="2026-09-30T04:00:00Z",
-        proposal_text="new process",
     )
-    persisted = reopened.runtime.get_snapshot(second.snapshot_id)
+    persisted = reopened.get_snapshot(second.snapshot_id)
     assert persisted == second
