@@ -43,6 +43,13 @@ class PostgresStore:
                     payload TEXT NOT NULL
                 )
                 """
+            )            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS memories (
+                    id TEXT PRIMARY KEY,
+                    payload TEXT NOT NULL
+                )
+                """
             )
         self._connection.commit()
 
@@ -168,6 +175,21 @@ class PostgresStore:
             cursor.execute("SELECT payload FROM experiment_ledger ORDER BY id")
             rows = cursor.fetchall()
         return tuple(json.loads(row[0]) for row in rows)
+
+    def save_memory(self, memory) -> None:
+        self._save("memories", memory.id, self._encode({
+            "id": memory.id, "subject_id": memory.subject_id,
+            "source_id": memory.source_id, "kind": memory.kind,
+            "created_at": memory.created_at, "version": memory.version,
+        }))
+
+    def get_memory(self, memory_id: str) -> dict | None:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT payload FROM memories WHERE id = %s", (memory_id,)
+            )
+            row = cursor.fetchone()
+        return None if row is None else json.loads(row[0])
 
     def close(self) -> None:
         self._connection.close()
