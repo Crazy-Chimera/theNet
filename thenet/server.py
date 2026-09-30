@@ -25,7 +25,6 @@ from src.counterfactual_impact_vector import build_counterfactual_impact_vector
 from src.counterfactual_experiment_matrix import ExperimentCase, run_counterfactual_experiment_matrix
 from src.counterfactual_reproducibility import fingerprint_experiment_matrix
 from src.experiment_ledger import create_experiment_ledger_record
-from src.experiment_memory_bridge import bridge_verified_experiment_to_memory
 from src.postgres_store import PostgresStore
 from src.relation import create_relation
 from src.sqlite_store import SQLiteStore
@@ -119,7 +118,6 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             "/v1/control/experiment-matrix": self._control_experiment_matrix,
             "/v1/control/reproducibility": self._control_reproducibility,
             "/v1/control/ledger": self._control_ledger,
-            "/v1/control/memory-bridge": self._control_memory_bridge,
         }
         path = urlparse(self.path).path
         handler = routes.get(path)
@@ -351,53 +349,6 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             self.server.store.save_experiment_ledger(record)
         return record.as_dict()
 
-    def _control_memory_bridge(self, payload: dict[str, Any]) -> dict[str, Any]:
-        verification_id = self._required_string(payload, "verification_id")
-        subject_id = self._required_string(payload, "subject_id")
-        created_at = payload.get("created_at", "2026-09-30T00:00:00Z")
-        baseline = self._control_run()
-        raw_cases = payload.get("cases")
-        if not isinstance(raw_cases, list) or not raw_cases:
-            raise ValueError("cases must be a non-empty list")
-        cases = []
-        for raw in raw_cases:
-            if not isinstance(raw, dict):
-                raise ValueError("each case must be an object")
-            cycle_index = raw.get("cycle_index")
-            if isinstance(cycle_index, bool) or not isinstance(cycle_index, int):
-                raise ValueError("case cycle_index must be an integer")
-            cases.append(ExperimentCase(
-                self._required_string(raw, "id"),
-                cycle_index,
-                self._required_string(raw, "proposal_text"),
-            ))
-        matrix = run_counterfactual_experiment_matrix(
-            baseline=baseline,
-            cases=tuple(cases),
-            runner=lambda overrides: self._control_run(overrides),
-        )
-        fingerprint = fingerprint_experiment_matrix(
-            matrix, build_evidence_graph(baseline).id
-        )
-        ledger = create_experiment_ledger_record(
-            matrix=matrix,
-            fingerprint=fingerprint,
-            run_id=verification_id,
-            created_at=created_at,
-        )
-        bridge = bridge_verified_experiment_to_memory(
-            ledger=ledger,
-            subject_id=subject_id,
-            verification_id=verification_id,
-            created_at=created_at,
-        )
-        with _STATE_LOCK:
-            self.server.store.save_experiment_ledger(ledger)
-            self.server.store.save_memory(bridge.memory)
-        return {
-            "ledger": ledger.as_dict(),
-            "bridge": bridge.as_dict(),
-        }
 
     def _control_demo(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Run one deterministic three-cycle F10.3 demonstration for Control Room."""
