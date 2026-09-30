@@ -1,6 +1,7 @@
 const state = {
   genesis: [],
   relations: [],
+  closures: [],
   events: []
 };
 
@@ -20,44 +21,37 @@ function text(value) {
     .replaceAll('"', "&quot;");
 }
 
-async function digest(payload) {
-  const bytes = new TextEncoder().encode(JSON.stringify(payload));
-  const hash = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(hash)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 function addEvent(kind, message) {
   state.events.unshift({ kind, message, createdAt: new Date().toISOString() });
   render();
 }
 
-async function createGenesis(subject, createdAt) {
-  const payload = { created_at: createdAt, subject, version: 1 };
-  const id = await digest(payload);
-  state.genesis.push({ id, subject, createdAt, version: 1 });
-  addEvent("GENESIS", `Created ${subject}`);
+async function api(path, payload) {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "request failed");
+  return data;
 }
 
-async function createRelation(sourceId, targetId, kind, createdAt) {
-  const payload = {
-    created_at: createdAt,
-    kind,
-    source_id: sourceId,
-    target_id: targetId,
-    version: 1
-  };
-  const id = await digest(payload);
-  state.relations.push({ id, sourceId, targetId, kind, createdAt, version: 1 });
-  addEvent("RELATION", `Created ${kind} relation`);
+async function loadState() {
+  const response = await fetch("/v1/state", {cache: "no-store"});
+  if (!response.ok) throw new Error("state unavailable");
+  const data = await response.json();
+  state.genesis = data.genesis || [];
+  state.relations = data.relations || [];
+  state.closures = data.closures || [];
+  state.events = data.events || [];
+  render();
 }
 
 function renderGenesisOptions() {
   const options = state.genesis
     .map((item) => `<option value="${text(item.id)}">${text(item.subject)}</option>`)
     .join("");
-
   $("relation-source").innerHTML = options;
   $("relation-target").innerHTML = options;
 }
@@ -73,7 +67,7 @@ function renderSelectedGenesis() {
   $("selected-genesis").className = "state-card";
   $("selected-genesis").innerHTML = `
     <div class="row-title">${text(item.subject)}</div>
-    <div class="row-meta">version ${item.version} · ${text(item.createdAt)}</div>
+    <div class="row-meta">version ${item.version} · ${text(item.created_at)}</div>
     <div class="mono">${text(item.id)}</div>
   `;
 }
@@ -87,17 +81,34 @@ function renderRelations() {
 
   $("relation-list").className = "list";
   $("relation-list").innerHTML = state.relations.map((relation) => {
-    const source = state.genesis.find((item) => item.id === relation.sourceId);
-    const target = state.genesis.find((item) => item.id === relation.targetId);
+    const source = state.genesis.find((item) => item.id === relation.source_id);
+    const target = state.genesis.find((item) => item.id === relation.target_id);
 
     return `
       <div class="relation-row">
-        <div class="row-title">${text(source?.subject ?? relation.sourceId)} → ${text(target?.subject ?? relation.targetId)}</div>
-        <div class="row-meta">${text(relation.kind)} · ${text(relation.createdAt)}</div>
+        <div class="row-title">${text(source?.subject ?? relation.source_id)} → ${text(target?.subject ?? relation.target_id)}</div>
+        <div class="row-meta">${text(relation.kind)} · ${text(relation.created_at)}</div>
         <div class="mono">${text(relation.id)}</div>
       </div>
     `;
   }).join("");
+}
+
+function renderClosures() {
+  const item = state.closures.at(-1);
+  if (!item) {
+    $("closure-result").className = "empty-state";
+    $("closure-result").textContent = "No Agent Ω closure yet.";
+    return;
+  }
+
+  $("closure-result").className = "state-card";
+  $("closure-result").innerHTML = `
+    <div class="row-title">Agent Ω Genesis Closure</div>
+    <div class="row-meta">Σ / ΙΩΤΑ closure verified in deterministic runtime</div>
+    <div class="mono">agent_state: ${text(item.agent_state.id)}</div>
+    <div class="mono">ΙΩΤΑ: ${text(item.iota.id)}</div>
+  `;
 }
 
 function renderEvents() {
@@ -111,7 +122,7 @@ function renderEvents() {
   $("event-list").innerHTML = state.events.map((event) => `
     <div class="event-row">
       <div class="row-title">${text(event.kind)}</div>
-      <div class="row-meta">${text(event.message)} · ${text(event.createdAt)}</div>
+      <div class="row-meta">${text(event.message)}</div>
     </div>
   `).join("");
 }
@@ -120,44 +131,73 @@ function render() {
   $("genesis-count").textContent = state.genesis.length;
   $("relation-count").textContent = state.relations.length;
   $("event-count").textContent = state.events.length;
+  $("closure-count").textContent = state.closures.length;
   renderGenesisOptions();
   renderSelectedGenesis();
   renderRelations();
+  renderClosures();
   renderEvents();
 }
 
 $("genesis-created-at").value = nowInputValue();
 $("relation-created-at").value = nowInputValue();
+$("closure-created-at").value = nowInputValue();
 
 $("genesis-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-
-  const subject = $("genesis-subject").value.trim();
-  const createdAt = $("genesis-created-at").value;
-  if (!subject || !createdAt) return;
-
-  await createGenesis(subject, createdAt);
-  event.target.reset();
-  $("genesis-created-at").value = nowInputValue();
+  try {
+    await api("/v1/genesis", {
+      subject: $("genesis-subject").value.trim(),
+      created_at: $("genesis-created-at").value
+    });
+    event.target.reset();
+    $("genesis-created-at").value = nowInputValue();
+    await loadState();
+  } catch (error) {
+    addEvent("ERROR", error.message);
+  }
 });
 
 $("relation-form").addEventListener("submit", async (event) => {
   event.preventDefault();
-
-  const sourceId = $("relation-source").value;
-  const targetId = $("relation-target").value;
-  const kind = $("relation-kind").value.trim();
-  const createdAt = $("relation-created-at").value;
-
-  if (!sourceId || !targetId || !kind || !createdAt) return;
-  if (sourceId === targetId) {
-    addEvent("REJECTED", "A relation currently requires distinct source and target.");
-    return;
+  try {
+    const sourceId = $("relation-source").value;
+    const targetId = $("relation-target").value;
+    if (!sourceId || !targetId || sourceId === targetId) {
+      throw new Error("Relation requires distinct source and target.");
+    }
+    await api("/v1/relations", {
+      source_id: sourceId,
+      target_id: targetId,
+      kind: $("relation-kind").value.trim(),
+      created_at: $("relation-created-at").value
+    });
+    event.target.reset();
+    $("relation-created-at").value = nowInputValue();
+    await loadState();
+  } catch (error) {
+    addEvent("ERROR", error.message);
   }
-
-  await createRelation(sourceId, targetId, kind, createdAt);
-  event.target.reset();
-  $("relation-created-at").value = nowInputValue();
 });
 
-render();
+$("closure-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try {
+    await api("/v1/closure", {
+      source_subject: $("closure-source").value.trim(),
+      target_subject: $("closure-target").value.trim(),
+      relation_kind: $("closure-kind").value.trim(),
+      proposal_text: $("closure-proposal").value.trim(),
+      evidence: $("closure-evidence").value.trim(),
+      expression_id: $("closure-expression").value.trim(),
+      created_at: $("closure-created-at").value
+    });
+    event.target.reset();
+    $("closure-created-at").value = nowInputValue();
+    await loadState();
+  } catch (error) {
+    addEvent("ERROR", error.message);
+  }
+});
+
+loadState().catch((error) => addEvent("ERROR", error.message));
