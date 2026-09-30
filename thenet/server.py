@@ -13,10 +13,12 @@ from typing import Any
 from urllib.parse import urlparse
 
 from src.genesis import create_genesis
+from src.genesis_population import create_genesis_population
+from src.resource_state import create_resource_state
 from src.postgres_store import PostgresStore
 from src.relation import create_relation
 from src.sqlite_store import SQLiteStore
-from thenet.engine import build_closure
+from thenet.engine import build_closure, run_recursive_convergence_mvp
 
 UI_ROOT = Path(__file__).resolve().parents[1] / "ui"
 _STATE_LOCK = Lock()
@@ -80,6 +82,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             "/v1/genesis": self._create_genesis,
             "/v1/relations": self._create_relation,
             "/v1/closure": self._build_closure,
+            "/v1/control/demo": self._control_demo,
         }
         path = urlparse(self.path).path
         handler = routes.get(path)
@@ -154,6 +157,84 @@ class RuntimeHandler(BaseHTTPRequestHandler):
                 ),
             )
         return result
+
+
+    def _control_demo(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Run one deterministic three-cycle F10.3 demonstration for Control Room."""
+        population = create_genesis_population(3, "2026-09-30T00:00:00Z")
+        initial = population.agents[0]
+        memory = create_resource_state(100.0, 0.0, "2026-09-30T00:00:00Z")
+        compute = create_resource_state(100.0, 0.0, "2026-09-30T00:00:00Z")
+        run = run_recursive_convergence_mvp(
+            population=population,
+            initial_state=initial,
+            proposal_builder=lambda index, state, previous: (
+                "observe initial state"
+                if previous is None
+                else f"refine from memory {previous.result.memory.id}"
+            ),
+            executor=lambda proposal: f"executed:{proposal.proposal}",
+            quorum=2,
+            new_singularity_builder=lambda index, proposal: f"control-room:{index}:{proposal.id}",
+            created_at=(
+                "2026-09-30T00:00:01Z",
+                "2026-09-30T00:00:02Z",
+                "2026-09-30T00:00:03Z",
+            ),
+            memory_resource=memory,
+            compute_resource=compute,
+            adaptive_memory_capacity=100.0,
+            adaptive_compute_capacity=100.0,
+            utility=1.0,
+        )
+        learning = run.learning_metrics
+        allocation = run.adaptive_resource_allocation(100.0, 100.0)
+        return {
+            "cycle_count": run.cycle_count,
+            "all_converged": run.all_converged,
+            "state_versions": run.state_versions,
+            "cycles": [
+                {
+                    "index": cycle.index,
+                    "proposal_id": cycle.proposal.id,
+                    "proposal": cycle.proposal.proposal,
+                    "parent_memory_id": cycle.parent_memory_id,
+                    "parent_outcome_id": cycle.parent_outcome_id,
+                    "outcome_id": cycle.result.outcome.id,
+                    "utility": cycle.result.outcome.utility,
+                    "omega_credit": cycle.result.credit.credit,
+                    "metrics": {
+                        "k": cycle.result.metrics.k,
+                        "c": cycle.result.metrics.c,
+                        "r": cycle.result.metrics.r,
+                        "phi": cycle.result.metrics.phi,
+                        "converged": cycle.result.metrics.converged,
+                    },
+                    "learning": {
+                        "proposal_novelty": learning[cycle.index - 1].proposal_novelty,
+                        "resource_efficiency": learning[cycle.index - 1].resource_efficiency,
+                        "state_delta": learning[cycle.index - 1].state_delta,
+                        "memory_dependency": learning[cycle.index - 1].memory_dependency,
+                        "verified_improvement": learning[cycle.index - 1].verified_improvement,
+                    },
+                }
+                for cycle in run.cycles
+            ],
+            "allocation": {
+                "id": allocation.id,
+                "improvement_bonus": allocation.improvement_bonus,
+                "memory_by_cycle": allocation.memory_by_cycle,
+                "compute_by_cycle": allocation.compute_by_cycle,
+                "total_memory": allocation.total_memory,
+                "total_compute": allocation.total_compute,
+            },
+            "resource_state": {
+                "memory_available": run.final_memory_resource.available,
+                "compute_available": run.final_compute_resource.available,
+                "memory_id": run.final_memory_resource.id,
+                "compute_id": run.final_compute_resource.id,
+            },
+        }
 
     def _state_snapshot(self) -> dict[str, Any]:
         with _STATE_LOCK:
