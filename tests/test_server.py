@@ -82,6 +82,49 @@ def test_runtime_port_accepts_valid_value(monkeypatch):
     monkeypatch.setenv("PORT", "8080")
     assert runtime_port() == 8080
 
+
+def test_control_room_query_traces_evidence_path():
+    server, thread = start_server()
+    try:
+        demo_request = Request(
+            f"http://127.0.0.1:{server.server_port}/v1/control/demo",
+            data=b"{}",
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(demo_request) as response:
+            demo = json.load(response)
+
+        source_id = demo["cycles"][1]["proposal_id"]
+        target_id = demo["cycles"][1]["audit"]["memory_id"]
+        request = Request(
+            f"http://127.0.0.1:{server.server_port}/v1/control/query",
+            data=json.dumps({
+                "operation": "path",
+                "source_id": source_id,
+                "target_id": target_id,
+                "direction": "forward",
+            }).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(request) as response:
+            payload = json.load(response)
+            assert response.status == 200
+            assert payload["graph_id"] == demo["evidence_graph"]["id"]
+            query = payload["query"]
+            assert query["depth"] == 5
+            assert [edge["relation"] for edge in query["edges"]] == [
+                "verified_by_consensus",
+                "converges",
+                "authorizes_execution",
+                "produces",
+                "remembered_as",
+            ]
+    finally:
+        stop_server(server, thread)
+
+
 def test_control_room_demo_exposes_recursive_f10_feedback():
     server, thread = start_server()
     try:
