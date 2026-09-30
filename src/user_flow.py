@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from hashlib import sha256
 import json
 
-from genesis import GenesisState, create_genesis
-from relation import Relation
+from src.genesis import GenesisState, create_genesis
+from src.relation import Relation
 
 
 @dataclass(frozen=True)
