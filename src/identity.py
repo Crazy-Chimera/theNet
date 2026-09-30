@@ -109,7 +109,15 @@ class IdentityVault:
         )
         try:
             temporary.write_text(payload, encoding="utf-8")
+            try:
+                temporary.chmod(0o600)
+            except OSError:
+                pass
             temporary.replace(self.path)
+            try:
+                self.path.chmod(0o600)
+            except OSError:
+                pass
         finally:
             if temporary.exists():
                 temporary.unlink()
@@ -174,7 +182,8 @@ class IdentityVault:
         return Ed25519PrivateKey.from_private_bytes(raw)
 
     def sign(self, did: str, message: str | bytes, password: str) -> Signature:
-        signature = self._private_key(did, password).sign(_message_bytes(message))
+        payload = _message_bytes(message)
+        signature = self._private_key(did, password).sign(payload)
         return Signature(did=did, signature=_b64(signature))
 
     def verify(
