@@ -14,6 +14,7 @@ from src.collective_runtime import CollectiveComputationResult, run_collective_c
 from src.genesis_population import GenesisPopulation
 from src.proposal import Proposal, create_proposal
 from src.resource_state import ResourceState
+from src.verification import create_verification
 
 
 @dataclass(frozen=True)
@@ -125,8 +126,7 @@ def run_recursive_convergence(
         verifications = tuple(
             # The proposer is always population.agents[0]; all remaining
             # agents are independent verifiers for this deterministic MVP.
-            __import__("src.verification", fromlist=["create_verification"])
-            .create_verification(
+            create_verification(
                 proposal.id,
                 verifier.subject_id,
                 f"recursive-cycle:{index}:{verifier.subject_id}:{proposal.id}",
