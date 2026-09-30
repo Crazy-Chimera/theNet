@@ -46,7 +46,7 @@ Identity(t+1) ≈ Identity(t) + verified evolution
 The requested six-module verification view is treated as an operational map, not as a claim that six identically named packages currently exist.
 
 - Identita: `src/identity.py` now provides Ed25519 identity generation, deterministic `did:thenet:` identifiers, message signing/verification, and an encrypted file-backed MVP vault. Unit tests verify persistence, tampering, wrong identities/passwords, empty and large messages, invalid inputs, immutability, and absence of plaintext private keys. This is an MVP vault boundary, not a managed KMS/HSM.
-- Agent: agent_state.py, closure and collective-computation orchestration provide the current Agent Ω state boundary.
+- Agent: `agent_state.py`, `agent.py`, Genesis closure and collective-computation orchestration provide the current Agent Ω state/decision boundary. `run_decision_cycle()` explicitly composes Θ → Σ → Γ → Ω → Π → Ω² and can bind a proposal to the verified Ed25519 identity. The cycle is side-effect free for canonical state; verified evolution remains the only state-changing path.
 - Paměť: memory.py, evolution_memory.py and related persistence contracts.
 - Síť: thenet/server.py, HTTP runtime and runtime persistence currently provide the network boundary. A dedicated WebSocket bootstrap/peer module is NOT VERIFIED by the current repository.
 - Kredit: the Ω-Credit family provides contribution/resource accounting and verified gates.
