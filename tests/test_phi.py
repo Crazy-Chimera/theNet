@@ -110,3 +110,12 @@ def test_observation_relation_mismatch_is_rejected():
 def test_invalid_observation_is_rejected():
     with pytest.raises(TypeError):
         create_phi_from_observation(object(), [])
+
+def test_observation_duplicate_relation_is_rejected():
+    flow = start_user_flow("request-1", "agent-a", STAMP)
+    relation = make_relation(flow.context.genesis.id, "agent-b")
+    flow = add_relation(flow, relation)
+    observation = observe(create_state(flow))
+
+    with pytest.raises(ValueError, match="duplicate relation IDs"):
+        create_phi_from_observation(observation, [relation, relation])
