@@ -1,6 +1,8 @@
 import pytest
 from src.genesis_network_bootstrap import bootstrap_three_agent_network
 from src.network_runtime import NetworkRuntime
+from src.peer_announcement import create_peer_announcement, verify_peer_announcement
+from src.identity import IdentityVault
 
 def bootstrap(tmp_path):
     return bootstrap_three_agent_network(
@@ -84,3 +86,36 @@ def test_membership_epoch_has_audit_events(tmp_path):
     events=runtime.membership_events()
     assert events[-1][1]==4
     assert events[-1][2:4]==("agent-2","leave")
+
+
+def test_lifecycle_and_active_discovery_guard(tmp_path):
+    boot=bootstrap(tmp_path)
+    runtime=NetworkRuntime(tmp_path/"runtime.db",boot.network)
+    for item in boot.agents: runtime.add_agent(item.admission.membership,item.agent)
+    assert runtime.lifecycle("agent-0").state=="ACTIVE"
+    runtime.remove_agent("agent-2")
+    assert runtime.lifecycle("agent-2").state=="REMOVED"
+    with pytest.raises(ValueError,match="active agent"):
+        runtime.discover_peers("agent-2")
+
+
+def test_signed_peer_announcement_binds_identity_and_epoch(tmp_path):
+    boot=bootstrap(tmp_path)
+    runtime=NetworkRuntime(tmp_path/"runtime.db",boot.network)
+    for item in boot.agents: runtime.add_agent(item.admission.membership,item.agent)
+    identity=boot.agents[0].identity
+    message='{"agent_id":"agent-0","epoch":3,"identity_did":"'+identity.did+'","network_id":"'+boot.network.network_id+'","status":"active","version":1}'
+    signature=boot.vault.sign(identity.did,message,"test-password")
+    announcement=create_peer_announcement(boot.network,boot.agents[0].agent,identity,3,"active",signature)
+    assert verify_peer_announcement(announcement,boot.network,boot.agents[0].agent,identity)
+    assert not verify_peer_announcement(announcement,boot.network,boot.agents[1].agent,boot.agents[1].identity)
+
+
+def test_fresh_snapshot_guard_rejects_membership_change(tmp_path):
+    boot=bootstrap(tmp_path)
+    runtime=NetworkRuntime(tmp_path/"runtime.db",boot.network)
+    for item in boot.agents: runtime.add_agent(item.admission.membership,item.agent)
+    snapshot=runtime.snapshot(created_at="2026-09-30T00:30:00Z")
+    runtime.remove_agent("agent-2")
+    with pytest.raises(ValueError,match="stale"):
+        runtime.validate_snapshot_current(snapshot)
