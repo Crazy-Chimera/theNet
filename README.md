@@ -1,4 +1,4 @@
-# theNet MVP 0.1
+# theNet MVP 0.2
 
 The Theory of Collective Computation begins with a different premise: the universe is not a program running on a fixed machine.
 
@@ -9,7 +9,9 @@ The current MVP is a publicly running Python service with:
 - browser UI;
 - HTTP API;
 - deterministic Genesis and Relation primitives;
-- in-process runtime state;
+- persistent RuntimeStore boundary;
+- PostgreSQL support via `THENET_POSTGRES_DSN`;
+- SQLite fallback for local development;
 - first Agent Ω Genesis Closure execution.
 
 Public service:
@@ -24,7 +26,7 @@ State:
 
 https://thenet-eew6.onrender.com/v1/state
 
-The current MVP runtime state is process-local and therefore ephemeral across service restarts. Persistent relational memory belongs to the next storage iteration.
+Core Genesis and Relation records are persisted through the RuntimeStore boundary. Configure `THENET_POSTGRES_DSN` for durable production storage; without it, the runtime uses an in-process SQLite database by default. Closure and event audit records remain process-local in this MVP.
 
 ## Architecture
 
@@ -140,3 +142,20 @@ python -m thenet server
 - Test runner: pytest
 - CI: GitHub Actions
 - Deployment: Render
+
+
+## Persistence configuration
+
+Production persistence is selected with:
+
+~~~bash
+THENET_POSTGRES_DSN=postgresql://...
+~~~
+
+For local development, SQLite can be selected explicitly:
+
+~~~bash
+THENET_SQLITE_PATH=./thenet.db
+~~~
+
+The HTTP runtime persists Genesis and Relation records through the selected store and reconstructs them after process restart.
