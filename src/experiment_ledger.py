@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from hashlib import sha256
-import json
 
 from src.counterfactual_experiment_matrix import CounterfactualExperimentMatrix
 from src.counterfactual_reproducibility import ExperimentFingerprint
