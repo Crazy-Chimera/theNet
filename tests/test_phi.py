@@ -92,7 +92,7 @@ def test_observation_materializes_exact_phi_structure():
     state = create_phi_from_observation(observation, [relation])
 
     assert state.relation_ids == (relation.id,)
-    assert state.edges == (("agent-a", "agent-b"),)
+    assert state.edges == ((flow.context.genesis.id, "agent-b"),)
 
 
 def test_observation_relation_mismatch_is_rejected():
