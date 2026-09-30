@@ -28,7 +28,7 @@ def test_health_endpoint_is_ready():
         payload = json.loads(response.read())
         assert response.status == 200
         assert payload["status"] == "ready"
-        assert payload["version"] == "0.1.0"
+        assert payload["version"] == "3.0.0-mvp"
     finally:
         stop_server(server, thread)
 
@@ -42,7 +42,7 @@ def test_root_endpoint_serves_public_ui():
         body = response.read().decode("utf-8")
         assert response.status == 200
         assert response.getheader("Content-Type").startswith("text/html")
-        assert "theNet MVP 0.1" in body
+        assert "theNet 3.0 MVP" in body
         assert "closure-form" in body
     finally:
         stop_server(server, thread)
