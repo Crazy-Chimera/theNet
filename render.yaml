@@ -8,3 +8,8 @@ services:
     autoDeploy: true
     buildCommand: pip install .
     startCommand: python -m thenet
+    envVars:
+      - key: THENET_POSTGRES_DSN
+        fromDatabase:
+          name: thenet-db
+          property: connectionString
