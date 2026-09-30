@@ -105,7 +105,7 @@ def test_signed_peer_announcement_binds_identity_and_epoch(tmp_path):
     for item in boot.agents: runtime.add_agent(item.admission.membership,item.agent)
     identity=boot.agents[0].identity
     message='{"agent_id":"agent-0","epoch":3,"identity_did":"'+identity.did+'","network_id":"'+boot.network.network_id+'","status":"active","version":1}'
-    signature=boot.vault.sign(identity.did,message,"test-password")
+    signature=IdentityVault(tmp_path/"vault").sign(identity.did,message,"test-password")
     announcement=create_peer_announcement(boot.network,boot.agents[0].agent,identity,3,"active",signature)
     assert verify_peer_announcement(announcement,boot.network,boot.agents[0].agent,identity)
     assert not verify_peer_announcement(announcement,boot.network,boot.agents[1].agent,boot.agents[1].identity)
