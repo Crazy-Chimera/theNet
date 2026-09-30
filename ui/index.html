@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="theNet basic relational computation interface">
-  <title>theNet — Basic UI</title>
+  <meta name="description" content="theNet relational computation runtime">
+  <title>theNet — Agent Ω MVP</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -17,17 +17,16 @@
           <small>collective computation</small>
         </div>
       </div>
-
       <nav aria-label="Primary navigation">
         <a class="nav-item active" href="#overview">Overview</a>
         <a class="nav-item" href="#genesis">Genesis</a>
         <a class="nav-item" href="#relations">Relations</a>
-        <a class="nav-item" href="#closure">Agent Ω</a>\n        <a class="nav-item" href="#events">Events</a>
+        <a class="nav-item" href="#closure">Agent Ω</a>
+        <a class="nav-item" href="#events">Events</a>
       </nav>
-
       <div class="sidebar-note">
         <span class="status-dot"></span>
-        Local prototype
+        Public runtime
       </div>
     </aside>
 
@@ -35,130 +34,91 @@
       <header class="topbar">
         <div>
           <p class="eyebrow">RELATIONAL COMPUTATION</p>
-          <h1>System surface</h1>
-          <p class="subtitle">Observe and create the foundational entities of theNet.</p>
+          <h1>theNet MVP 0.1</h1>
+          <p class="subtitle">A public interface to the relational runtime and the first Agent Ω closure.</p>
         </div>
-        <div class="runtime-badge" id="runtime-status">LOCAL</div>
+        <div class="runtime-badge" id="runtime-status">LIVE</div>
       </header>
 
       <section id="overview" class="section">
         <div class="section-heading">
           <div>
             <p class="eyebrow">OVERVIEW</p>
-            <h2>Current state</h2>
+            <h2>Runtime state</h2>
           </div>
         </div>
-
         <div class="metrics">
-          <article class="metric">
-            <span>Genesis states</span>
-            <strong id="genesis-count">0</strong>
-          </article>
-          <article class="metric">
-            <span>Relations</span>
-            <strong id="relation-count">0</strong>
-          </article>
-          <article class="metric">
-            <span>Events</span>
-            <strong id="event-count">0</strong>
-          </article>
-          <article class="metric">
-            <span>Integrity</span>
-            <strong class="positive">READY</strong>
-          </article>
+          <article class="metric"><span>Genesis states</span><strong id="genesis-count">0</strong></article>
+          <article class="metric"><span>Relations</span><strong id="relation-count">0</strong></article>
+          <article class="metric"><span>Events</span><strong id="event-count">0</strong></article>
+          <article class="metric"><span>Agent Ω closures</span><strong id="closure-count">0</strong></article>
+          <article class="metric"><span>Integrity</span><strong class="positive">READY</strong></article>
         </div>
       </section>
 
       <section id="genesis" class="section grid-two">
         <article class="panel">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">01 · GENESIS</p>
-              <h2>Create a state</h2>
-            </div>
-          </div>
-
+          <div class="panel-heading"><div><p class="eyebrow">01 · GENESIS</p><h2>Create a state</h2></div></div>
           <form id="genesis-form">
-            <label>
-              Subject
-              <input id="genesis-subject" name="subject" required placeholder="e.g. Agent Ω">
-            </label>
-            <label>
-              Created at
-              <input id="genesis-created-at" name="createdAt" required type="datetime-local">
-            </label>
+            <label>Subject<input id="genesis-subject" name="subject" required placeholder="e.g. Agent Ω"></label>
+            <label>Created at<input id="genesis-created-at" name="createdAt" required type="datetime-local"></label>
             <button type="submit">Create Genesis</button>
           </form>
-          <p class="form-note">Prototype only: the result remains in browser memory.</p>
+          <p class="form-note">The request is executed by the public runtime.</p>
         </article>
-
         <article class="panel">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">STATE</p>
-              <h2>Selected Genesis</h2>
-            </div>
-          </div>
+          <div class="panel-heading"><div><p class="eyebrow">STATE</p><h2>Latest Genesis</h2></div></div>
           <div id="selected-genesis" class="empty-state">No Genesis selected.</div>
         </article>
       </section>
 
       <section id="relations" class="section grid-two">
         <article class="panel">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">02 · RELATION</p>
-              <h2>Create a relation</h2>
-            </div>
-          </div>
-
+          <div class="panel-heading"><div><p class="eyebrow">02 · RELATION</p><h2>Create a relation</h2></div></div>
           <form id="relation-form">
-            <label>
-              Source
-              <select id="relation-source" required></select>
-            </label>
-            <label>
-              Target
-              <select id="relation-target" required></select>
-            </label>
-            <label>
-              Kind
-              <input id="relation-kind" required placeholder="e.g. observes">
-            </label>
-            <label>
-              Created at
-              <input id="relation-created-at" required type="datetime-local">
-            </label>
+            <label>Source<select id="relation-source" required></select></label>
+            <label>Target<select id="relation-target" required></select></label>
+            <label>Kind<input id="relation-kind" required placeholder="e.g. observes"></label>
+            <label>Created at<input id="relation-created-at" required type="datetime-local"></label>
             <button type="submit">Create Relation</button>
           </form>
-          <p class="form-note">Relations are directed: reversing source and target changes identity.</p>
+          <p class="form-note">Relations are directed and deterministic.</p>
         </article>
-
         <article class="panel">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">GRAPH</p>
-              <h2>Relations</h2>
-            </div>
-          </div>
+          <div class="panel-heading"><div><p class="eyebrow">GRAPH</p><h2>Relations</h2></div></div>
           <div id="relation-list" class="list empty-state">No relations yet.</div>
+        </article>
+      </section>
+
+      <section id="closure" class="section grid-two">
+        <article class="panel">
+          <div class="panel-heading"><div><p class="eyebrow">Ω · GENESIS CLOSURE</p><h2>Run Agent Ω</h2></div></div>
+          <form id="closure-form">
+            <label>Source subject<input id="closure-source" required value="Agent Ω"></label>
+            <label>Target subject<input id="closure-target" required value="theNet"></label>
+            <label>Relation kind<input id="closure-kind" required value="computes"></label>
+            <label>Proposal<input id="closure-proposal" required value="Advance verified relational state."></label>
+            <label>Evidence<input id="closure-evidence" required value="Deterministic MVP verification."></label>
+            <label>Expression ID<input id="closure-expression" required value="mvp-expression"></label>
+            <label>Created at<input id="closure-created-at" required type="datetime-local"></label>
+            <button type="submit">Execute Closure</button>
+          </form>
+          <p class="form-note">Genesis → Relation → Φ → Ω → Ω² → ΦΩ² → Γ → Π → Ψ → Θ → Ρ → Σ → ΙΩΤΑ → Agent Ω state.</p>
+        </article>
+        <article class="panel">
+          <div class="panel-heading"><div><p class="eyebrow">CLOSURE STATE</p><h2>Latest Agent Ω</h2></div></div>
+          <div id="closure-result" class="empty-state">No Agent Ω closure yet.</div>
         </article>
       </section>
 
       <section id="events" class="section">
         <article class="panel">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">EVENT STREAM</p>
-              <h2>Visible state changes</h2>
-            </div>
-          </div>
+          <div class="panel-heading"><div><p class="eyebrow">EVENT STREAM</p><h2>Visible state changes</h2></div></div>
           <div id="event-list" class="events empty-state">No events yet.</div>
         </article>
       </section>
     </main>
   </div>
-
   <script type="module" src="./app.js"></script>
 </body>
 </html>
