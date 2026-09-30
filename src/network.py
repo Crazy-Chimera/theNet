@@ -10,6 +10,8 @@ from typing import Any
 from websockets.asyncio.client import connect
 from websockets.asyncio.server import Server, ServerConnection, serve
 
+from src.identity import Identity, Signature, verify_signature
+
 
 @dataclass(frozen=True)
 class Peer:
@@ -19,7 +21,7 @@ class Peer:
 
 
 class BootstrapNode:
-    """Minimal authenticated-by-registration peer registry and message relay."""
+    """Minimal Ed25519-authenticated peer registry and message relay."""
 
     def __init__(self) -> None:
         self._connections: dict[str, ServerConnection] = {}
@@ -55,6 +57,16 @@ class BootstrapNode:
                 message_type = message.get("type")
                 if message_type == "register":
                     peer_id = self._required_string(message, "peer_id")
+                    public_key = self._required_string(message, "public_key")
+                    signature = self._required_string(message, "signature")
+                    identity = Identity(did=peer_id, public_key=public_key)
+                    if not verify_signature(
+                        identity,
+                        peer_id,
+                        Signature(did=peer_id, signature=signature),
+                    ):
+                        raise ValueError("peer identity signature is invalid")
+
                     remote = websocket.remote_address
                     host = str(remote[0]) if remote else "unknown"
                     port = int(remote[1]) if remote else 0
@@ -127,16 +139,32 @@ class BootstrapNode:
 class PeerClient:
     """Small Agent-side WebSocket client used by local and integration runtimes."""
 
-    def __init__(self, peer_id: str) -> None:
-        if not isinstance(peer_id, str) or not peer_id.strip():
-            raise ValueError("peer_id must be non-empty")
-        self.peer_id = peer_id
+    def __init__(self, identity: Identity, vault: IdentityVault, password: str) -> None:
+        if not isinstance(identity, Identity):
+            raise TypeError("identity must be Identity")
+        if not isinstance(vault, IdentityVault):
+            raise TypeError("vault must be IdentityVault")
+        if not isinstance(password, str) or not password:
+            raise ValueError("password must be non-empty")
+        self.identity = identity
+        self.peer_id = identity.did
+        self._vault = vault
+        self._password = password
         self._connection = None
 
     async def connect(self, host: str, port: int) -> tuple[Peer, ...]:
         self._connection = await connect(f"ws://{host}:{port}")
+        signature = self._vault.sign(self.peer_id, self.peer_id, self._password)
         await self._connection.send(
-            json.dumps({"type": "register", "peer_id": self.peer_id}, sort_keys=True)
+            json.dumps(
+                {
+                    "type": "register",
+                    "peer_id": self.peer_id,
+                    "public_key": self.identity.public_key,
+                    "signature": signature.signature,
+                },
+                sort_keys=True,
+            )
         )
         raw = await self._connection.recv()
         message = json.loads(raw)
