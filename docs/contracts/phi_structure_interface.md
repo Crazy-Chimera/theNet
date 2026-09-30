@@ -52,8 +52,9 @@ A normalized structural density for the finite directed graph:
 `Φ = |E| / (|V| · (|V| - 1))`
 
 where:
-- `V` is the number of unique nodes.
-- `E` is the number of unique directed relations.
+ - `V` is the number of unique nodes.
+- `E` is the number of unique directed endpoint pairs `(source_id, target_id)`.
+- multiple Relation kinds may share one directed endpoint pair; they count once toward structural density.
 - self-relations are rejected because they do not represent a directed connection between distinct nodes in this MVP metric.
 
 For a graph with fewer than two nodes, `Φ = 0.0`.
@@ -82,7 +83,7 @@ Equivalent relation sets must therefore produce the same structure ID regardless
 6. Relations are deterministic and sorted.
 7. Input order does not change the structure identity.
 8. `0.0 <= phi <= 1.0`.
-9. `phi` depends only on the unique directed relation set and its node set.
+9. `phi` depends only on the unique directed endpoint pairs and the node set; relation kind does not change density.
 10. Structure creation does not mutate any Relation.
 11. No external service is required.
 12. Φ Structure does not perform process evolution, memory, consensus, verification, contribution scoring, meaning, or self-modification.
@@ -120,6 +121,7 @@ The test suite must verify:
 - density calculation;
 - duplicate relation rejection;
 - self-relation rejection;
+- multiple relation kinds on one endpoint pair;
 - invalid input rejection;
 - output immutability;
 - no mutation of source Relation values.
