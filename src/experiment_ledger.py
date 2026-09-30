@@ -41,14 +41,7 @@ def create_experiment_ledger_record(
     if not isinstance(created_at, str) or not created_at.strip():
         raise ValueError("created_at must be non-empty")
 
-    payload = {
-        "fingerprint": fingerprint.as_dict(),
-        "matrix": matrix.as_dict(),
-        "created_at": created_at,
-        "version": 1,
-    }
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    identifier = sha256(canonical.encode("utf-8")).hexdigest()
+    identifier = fingerprint.result_fingerprint
     return ExperimentLedgerRecord(
         id=identifier,
         fingerprint=fingerprint,
