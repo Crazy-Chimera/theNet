@@ -66,6 +66,29 @@ class PostgresStore:
 
         self._connection.commit()
 
+    @staticmethod
+    def _decode_genesis(payload: str) -> GenesisState:
+        value = json.loads(payload)
+        return GenesisState(
+            id=value["id"],
+            subject=value["subject"],
+            created_at=value["created_at"],
+            relations=tuple(value["relations"]),
+            version=value["version"],
+        )
+
+    @staticmethod
+    def _decode_relation(payload: str) -> Relation:
+        value = json.loads(payload)
+        return Relation(
+            id=value["id"],
+            source_id=value["source_id"],
+            target_id=value["target_id"],
+            kind=value["kind"],
+            created_at=value["created_at"],
+            version=value["version"],
+        )
+
     def save_genesis(self, state: GenesisState) -> None:
         payload = self._encode(
             {
@@ -85,18 +108,13 @@ class PostgresStore:
                 (state_id,),
             )
             row = cursor.fetchone()
+        return None if row is None else self._decode_genesis(row[0])
 
-        if row is None:
-            return None
-
-        value = json.loads(row[0])
-        return GenesisState(
-            id=value["id"],
-            subject=value["subject"],
-            created_at=value["created_at"],
-            relations=tuple(value["relations"]),
-            version=value["version"],
-        )
+    def list_genesis(self) -> tuple[GenesisState, ...]:
+        with self._connection.cursor() as cursor:
+            cursor.execute("SELECT payload FROM genesis ORDER BY id")
+            rows = cursor.fetchall()
+        return tuple(self._decode_genesis(row[0]) for row in rows)
 
     def save_relation(self, relation: Relation) -> None:
         payload = self._encode(
@@ -118,19 +136,13 @@ class PostgresStore:
                 (relation_id,),
             )
             row = cursor.fetchone()
+        return None if row is None else self._decode_relation(row[0])
 
-        if row is None:
-            return None
-
-        value = json.loads(row[0])
-        return Relation(
-            id=value["id"],
-            source_id=value["source_id"],
-            target_id=value["target_id"],
-            kind=value["kind"],
-            created_at=value["created_at"],
-            version=value["version"],
-        )
+    def list_relations(self) -> tuple[Relation, ...]:
+        with self._connection.cursor() as cursor:
+            cursor.execute("SELECT payload FROM relations ORDER BY id")
+            rows = cursor.fetchall()
+        return tuple(self._decode_relation(row[0]) for row in rows)
 
     def close(self) -> None:
         self._connection.close()
