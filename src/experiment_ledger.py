@@ -27,13 +27,15 @@ def create_experiment_ledger_record(
     *,
     matrix: CounterfactualExperimentMatrix,
     fingerprint: ExperimentFingerprint,
-    run_id: str,
-    created_at: str,
+    run_id: str | None = None,
+    created_at: str = "",
 ) -> ExperimentLedgerRecord:
     if not isinstance(matrix, CounterfactualExperimentMatrix):
         raise TypeError("matrix must be CounterfactualExperimentMatrix")
     if not isinstance(fingerprint, ExperimentFingerprint):
         raise TypeError("fingerprint must be ExperimentFingerprint")
+    if run_id is None:
+        run_id = created_at
     if not isinstance(run_id, str) or not run_id.strip():
         raise ValueError("run_id must be non-empty")
     if not isinstance(created_at, str) or not created_at.strip():
