@@ -269,48 +269,60 @@ function inspectNode(type, id, meta = {}) {
 function renderGraphs() {
   const memory = $("memory-graph");
   const agents = $("agent-graph");
+  const graph = state.evidenceGraph;
 
-  if (state.control?.cycles?.length) {
-    const cycles = state.control.cycles;
+  if (graph && graph.nodes.length) {
+    const memories = graph.nodes.filter(function(node) { return node.type === "MEMORY"; });
     memory.className = "evidence-graph";
-    memory.innerHTML = cycles.map(function(cycle, index) {
-      const previous = index === 0 ? "GENESIS" : cycles[index - 1].audit.memory_id;
+    memory.innerHTML = memories.map(function(node) {
+      const incoming = graph.edges.filter(function(edge) { return edge.target === node.id; });
+      const outgoing = graph.edges.filter(function(edge) { return edge.source === node.id; });
       return '<div class="graph-row">' +
-        '<button type="button" class="graph-node graph-click root" data-inspect-type="PARENT MEMORY" data-inspect-id="' + text(previous) + '"><small>PARENT MEMORY</small><code>' + text(previous) + '</code></button>' +
-        '<span class="graph-arrow">→</span>' +
-        '<button type="button" class="graph-node graph-click" data-inspect-type="PROPOSAL" data-inspect-id="' + text(cycle.proposal_id) + '"><small>PROPOSAL · CYCLE ' + cycle.index + '</small><code>' + text(cycle.proposal_id) + '</code></button>' +
-        '<span class="graph-arrow">→</span>' +
-        '<button type="button" class="graph-node graph-click" data-inspect-type="MEMORY" data-inspect-id="' + text(cycle.audit.memory_id) + '" data-inspect-label="cycle ' + cycle.index + '"><small>OUTCOME → MEMORY</small><code>' + text(cycle.audit.memory_id) + '</code></button>' +
-        '<span class="graph-arrow">→</span>' +
-        '<button type="button" class="graph-node graph-click" data-inspect-type="NEXT STATE" data-inspect-id="' + text(cycle.audit.state_id) + '"><small>NEXT STATE</small><code>' + text(cycle.audit.state_id) + '</code></button>' +
+        '<button type="button" class="graph-node graph-click root" data-inspect-type="' + text(node.type) + '" data-inspect-id="' + text(node.id) + '" data-inspect-label="' + text(node.label) + '">' +
+        '<small>' + text(node.type) + '</small><strong>' + text(node.label) + '</strong><code>' + text(node.id) + '</code></button>' +
+        '<span class="graph-arrow">↔</span>' +
+        '<div class="graph-node"><small>REFERENCES</small><strong>in ' + incoming.length + ' · out ' + outgoing.length + '</strong><code>' +
+        text(outgoing.map(function(edge) { return edge.relation + ':' + edge.target; }).join(" · ")) + '</code></div>' +
         '</div>';
     }).join("");
   } else {
     memory.className = "evidence-graph empty-state";
-    memory.textContent = "Run a recursive cycle to build the memory lineage.";
+    memory.textContent = "Run a recursive cycle to build the evidence graph.";
   }
 
-  if (state.relations.length) {
+  if (graph && graph.nodes.some(function(node) { return node.type === "AGENT"; })) {
+    const agentsById = graph.nodes.filter(function(node) { return node.type === "AGENT"; });
     agents.className = "evidence-graph";
-    agents.innerHTML = state.relations.map(function(relation) {
-      const source = state.genesis.find(function(item) { return item.id === relation.source_id; });
-      const target = state.genesis.find(function(item) { return item.id === relation.target_id; });
+    agents.innerHTML = agentsById.map(function(node) {
+      const edges = graph.edges.filter(function(edge) {
+        return edge.source === node.id || edge.target === node.id;
+      });
       return '<div class="graph-row">' +
-        '<button type="button" class="graph-node graph-click" data-inspect-type="AGENT" data-inspect-id="' + text(relation.source_id) + '" data-inspect-label="' + text(source?.subject ?? relation.source_id) + '"><small>SOURCE</small><strong>' + text(source?.subject ?? relation.source_id) + '</strong><code>' + text(relation.source_id) + '</code></button>' +
+        '<button type="button" class="graph-node graph-click" data-inspect-type="AGENT" data-inspect-id="' + text(node.id) + '" data-inspect-label="' + text(node.label) + '">' +
+        '<small>AGENT</small><strong>' + text(node.label) + '</strong><code>' + text(node.id) + '</code></button>' +
         '<span class="graph-arrow">→</span>' +
-        '<button type="button" class="graph-node graph-click" data-inspect-type="AGENT" data-inspect-id="' + text(relation.target_id) + '" data-inspect-label="' + text(target?.subject ?? relation.target_id) + '"><small>' + text(relation.kind) + '</small><strong>' + text(target?.subject ?? relation.target_id) + '</strong><code>' + text(relation.target_id) + '</code></button>' +
+        '<div class="graph-node"><small>RELATIONAL EDGES</small><strong>' + edges.length + '</strong><code>' +
+        text(edges.map(function(edge) { return edge.relation + ':' + (edge.source === node.id ? edge.target : edge.source); }).join(" · ")) + '</code></div>' +
         '</div>';
     }).join("");
   } else {
     agents.className = "evidence-graph empty-state";
-    agents.textContent = "No runtime relations yet.";
+    agents.textContent = "No runtime agent nodes yet.";
   }
 
   document.querySelectorAll(".graph-click").forEach(function(button) {
     button.addEventListener("click", function() {
-      inspectNode(button.dataset.inspectType, button.dataset.inspectId, {
+      const id = button.dataset.inspectId;
+      const type = button.dataset.inspectType;
+      const node = graph?.nodes.find(function(item) { return item.id === id; });
+      const refs = graph?.edges.filter(function(edge) {
+        return edge.source === id || edge.target === id;
+      }) || [];
+      inspectNode(type, id, {
         label: button.dataset.inspectLabel,
-        refs: { "selected_from": button.dataset.inspectType }
+        refs: Object.fromEntries(refs.map(function(edge, index) {
+          return ["edge_" + (index + 1), edge.relation + " → " + (edge.source === id ? edge.target : edge.source)];
+        }))
       });
     });
   });
