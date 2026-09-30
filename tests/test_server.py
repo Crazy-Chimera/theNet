@@ -102,6 +102,10 @@ def test_control_room_replay_is_deterministic():
             assert payload["original_cycles"] == 3
             assert payload["replay_cycles"] == 3
             assert payload["original_graph_id"] == payload["replay_graph_id"]
+            assert payload["first_divergence_cycle"] is None
+            assert payload["first_divergence_artifact"] is None
+            assert len(payload["artifact_comparisons"]) == 30
+            assert all(item["match"] is True for item in payload["artifact_comparisons"])
     finally:
         stop_server(server, thread)
 
