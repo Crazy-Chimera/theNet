@@ -2,6 +2,7 @@ import asyncio
 
 import pytest
 
+from src.identity import IdentityVault
 from src.network import BootstrapNode, PeerClient
 
 
@@ -10,23 +11,28 @@ def test_bootstrap_two_agents_register_and_exchange_messages():
         bootstrap = BootstrapNode()
         port = await bootstrap.start()
 
-        first = PeerClient("agent-a")
-        second = PeerClient("agent-b")
+        vault = IdentityVault(":memory:")
+        first_identity = vault.create("first")
+        second_identity = vault.create("second")
+        first = PeerClient(first_identity, vault, "first")
+        second = PeerClient(second_identity, vault, "second")
         try:
             first_peers = await first.connect("127.0.0.1", port)
             assert first_peers == ()
 
             second_peers = await second.connect("127.0.0.1", port)
-            assert [peer.peer_id for peer in second_peers] == ["agent-a"]
-            assert [peer.peer_id for peer in bootstrap.peers] == ["agent-a", "agent-b"]
+            assert [peer.peer_id for peer in second_peers] == [first_identity.did]
+            assert [peer.peer_id for peer in bootstrap.peers] == sorted(
+                [first_identity.did, second_identity.did]
+            )
 
-            await first.send("agent-b", {"proposal": "hello"})
+            await first.send(second_identity.did, {"proposal": "hello"})
             received = await second.receive()
 
             assert received == {
                 "type": "message",
-                "source": "agent-a",
-                "target": "agent-b",
+                "source": first_identity.did,
+                "target": second_identity.did,
                 "payload": {"proposal": "hello"},
             }
         finally:
@@ -41,7 +47,8 @@ def test_unknown_target_is_reported():
     async def scenario():
         bootstrap = BootstrapNode()
         port = await bootstrap.start()
-        client = PeerClient("agent-a")
+        vault = IdentityVault(":memory:")
+        client = PeerClient(vault.create("password"), vault, "password")
         try:
             await client.connect("127.0.0.1", port)
             await client.send("missing", {"x": 1})
@@ -54,12 +61,6 @@ def test_unknown_target_is_reported():
             await bootstrap.stop()
 
     asyncio.run(scenario())
-
-
-@pytest.mark.parametrize("peer_id", ["", "   ", None])
-def test_peer_id_is_required(peer_id):
-    with pytest.raises(ValueError):
-        PeerClient(peer_id)
 
 
 def test_message_requires_connection():
