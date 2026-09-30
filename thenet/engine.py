@@ -379,8 +379,11 @@ def run_recursive_convergence_mvp(
     memory_resource: ResourceState,
     compute_resource: ResourceState,
     utility: float = 1.0,
+    adaptive_memory_capacity: float | None = None,
+    adaptive_compute_capacity: float | None = None,
+    improvement_bonus: float = 0.25,
 ) -> RecursiveConvergenceRun:
-    """Expose the multi-cycle Agent Ω convergence runtime."""
+    """Expose the multi-cycle Agent Ω convergence runtime with F10.3 feedback."""
     return run_recursive_convergence(
         population=population,
         initial_state=initial_state,
@@ -392,4 +395,7 @@ def run_recursive_convergence_mvp(
         memory_resource=memory_resource,
         compute_resource=compute_resource,
         utility=utility,
+        adaptive_memory_capacity=adaptive_memory_capacity,
+        adaptive_compute_capacity=adaptive_compute_capacity,
+        improvement_bonus=improvement_bonus,
     )
