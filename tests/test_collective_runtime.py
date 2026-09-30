@@ -69,6 +69,11 @@ def test_runtime_closes_collective_computation_loop():
     assert result.execution.memory_after_id == result.memory_resource.id
     assert result.execution.compute_after_id == result.compute_resource.id
     assert result.state.version == 2
+    assert result.metrics.k > 0.8
+    assert result.metrics.c < 0.3
+    assert result.metrics.r > 5
+    assert result.metrics.phi > 0.7
+    assert result.metrics.converged is True
 
 
 def test_runtime_is_deterministic():
