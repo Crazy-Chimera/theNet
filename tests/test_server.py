@@ -197,7 +197,7 @@ def test_control_room_state_diff_exposes_metric_and_resource_changes():
                 for item in diff["fields"]
             )
             assert any(
-                item["scope"] == "memory_resource" and item["changed"]
+                item["scope"] == "state" and item["field"] == "singularity_id" and item["changed"]
                 for item in diff["fields"]
             )
     finally:
