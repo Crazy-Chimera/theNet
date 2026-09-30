@@ -15,8 +15,4 @@ dependencies = [
 thenet = "thenet.cli:main"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
-py-modules = ["genesis", "relation"]
-
-[tool.setuptools.packages.find]
-where = ["src"]
+packages = ["src", "thenet"]
