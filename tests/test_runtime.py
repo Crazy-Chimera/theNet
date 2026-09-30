@@ -26,8 +26,10 @@ def test_module_entry_point_stays_alive_and_serves_health() -> None:
         for _ in range(20):
             try:
                 with urlopen("http://127.0.0.1:8766/health", timeout=1) as response:
+                    payload = json.loads(response.read())
                     assert response.status == 200
-                    assert json.loads(response.read()) == {"status": "ready"}
+                    assert payload["status"] == "ready"
+                    assert payload["version"] == "0.1.0"
                     break
             except Exception:
                 time.sleep(0.25)
