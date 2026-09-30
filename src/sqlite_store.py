@@ -55,6 +55,29 @@ class SQLiteStore:
         if existing[0] != payload:
             raise ValueError("storage conflict: identifier already contains different data")
 
+    @staticmethod
+    def _decode_genesis(payload: str) -> GenesisState:
+        value = json.loads(payload)
+        return GenesisState(
+            id=value["id"],
+            subject=value["subject"],
+            created_at=value["created_at"],
+            relations=tuple(value["relations"]),
+            version=value["version"],
+        )
+
+    @staticmethod
+    def _decode_relation(payload: str) -> Relation:
+        value = json.loads(payload)
+        return Relation(
+            id=value["id"],
+            source_id=value["source_id"],
+            target_id=value["target_id"],
+            kind=value["kind"],
+            created_at=value["created_at"],
+            version=value["version"],
+        )
+
     def save_genesis(self, state: GenesisState) -> None:
         payload = self._encode(
             {
@@ -72,17 +95,13 @@ class SQLiteStore:
             "SELECT payload FROM genesis WHERE id = ?",
             (state_id,),
         ).fetchone()
-        if row is None:
-            return None
+        return None if row is None else self._decode_genesis(row[0])
 
-        value = json.loads(row[0])
-        return GenesisState(
-            id=value["id"],
-            subject=value["subject"],
-            created_at=value["created_at"],
-            relations=tuple(value["relations"]),
-            version=value["version"],
-        )
+    def list_genesis(self) -> tuple[GenesisState, ...]:
+        rows = self._connection.execute(
+            "SELECT payload FROM genesis ORDER BY id"
+        ).fetchall()
+        return tuple(self._decode_genesis(row[0]) for row in rows)
 
     def save_relation(self, relation: Relation) -> None:
         payload = self._encode(
@@ -102,18 +121,13 @@ class SQLiteStore:
             "SELECT payload FROM relations WHERE id = ?",
             (relation_id,),
         ).fetchone()
-        if row is None:
-            return None
+        return None if row is None else self._decode_relation(row[0])
 
-        value = json.loads(row[0])
-        return Relation(
-            id=value["id"],
-            source_id=value["source_id"],
-            target_id=value["target_id"],
-            kind=value["kind"],
-            created_at=value["created_at"],
-            version=value["version"],
-        )
+    def list_relations(self) -> tuple[Relation, ...]:
+        rows = self._connection.execute(
+            "SELECT payload FROM relations ORDER BY id"
+        ).fetchall()
+        return tuple(self._decode_relation(row[0]) for row in rows)
 
     def close(self) -> None:
         self._connection.close()
