@@ -126,8 +126,10 @@ def test_recursive_convergence_feeds_adaptive_budget_into_next_cycle():
     # The third cycle must consume the cumulative F10.3 allocation, where
     # verified improvement increases cycle 2's share above cycle 1's share.
     expected = result.adaptive_resource_allocation(100.0, 100.0)
-    cycle2_share = dict(expected.memory_by_cycle)[2]
-    assert cycle2_share > 50.0
+    shares = dict(expected.memory_by_cycle)
+    cycle1_share = shares[1]
+    cycle2_share = shares[2]
+    assert cycle2_share > cycle1_share
 
     expected_memory = __import__("src.resource_state", fromlist=["create_resource_state"]).create_resource_state(
         cycle2_share,
