@@ -30,7 +30,7 @@ jobs:
         env:
           PORT: "8765"
         run: |
-          python -m thenet &
+          python -m thenet server &
           pid=$!
           trap 'kill $pid' EXIT
           python - <<'PY'
