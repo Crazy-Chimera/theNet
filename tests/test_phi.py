@@ -4,7 +4,14 @@ import pytest
 
 from src.genesis import create_genesis
 from src.relation import create_relation
-from src.phi import PhiStructure, create_phi, create_phi_structure
+from src.phi import (
+    PhiStructure,
+    create_phi,
+    create_phi_from_observation,
+    create_phi_structure,
+)
+from src.state import observe
+from src.user_flow import add_relation, start_user_flow
 
 
 STAMP = "2026-09-22T00:00:00Z"
@@ -27,7 +34,9 @@ def test_phi_is_order_independent_and_deduplicates():
     first = make_relation("a", "b")
     second = make_relation("b", "c")
 
-    assert create_phi_structure([first, second, first]) == create_phi_structure([second, first])
+    assert create_phi_structure([first, second, first]) == create_phi_structure(
+        [second, first]
+    )
 
 
 def test_empty_phi_is_valid():
@@ -70,3 +79,34 @@ def test_genesis_identifiers_can_form_phi_edges():
 
     assert state.node_ids == tuple(sorted((a.id, b.id)))
     assert state.edges == ((a.id, b.id),)
+
+
+def test_observation_materializes_exact_phi_structure():
+    flow = start_user_flow("request-1", STAMP, "agent-a")
+    relation = make_relation("agent-a", "agent-b")
+    flow = add_relation(flow, relation)
+    observation = observe(
+        __import__("src.state", fromlist=["create_state"]).create_state(flow)
+    )
+
+    state = create_phi_from_observation(observation, [relation])
+
+    assert state.relation_ids == (relation.id,)
+    assert state.edges == (("agent-a", "agent-b"),)
+
+
+def test_observation_relation_mismatch_is_rejected():
+    flow = start_user_flow("request-1", STAMP, "agent-a")
+    relation = make_relation("agent-a", "agent-b")
+    flow = add_relation(flow, relation)
+    observation = observe(
+        __import__("src.state", fromlist=["create_state"]).create_state(flow)
+    )
+
+    with pytest.raises(ValueError):
+        create_phi_from_observation(observation, [])
+
+
+def test_invalid_observation_is_rejected():
+    with pytest.raises(TypeError):
+        create_phi_from_observation(object(), [])
