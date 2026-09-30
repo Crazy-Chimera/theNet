@@ -260,7 +260,64 @@ def runtime_port() -> int:
     return port
 
 
+def run_persistence_probe() -> None:
+    """Verify durable Genesis -> Relation persistence when explicitly enabled."""
+    if os.getenv("THENET_PERSISTENCE_PROBE") != "1":
+        return
+
+    store = create_runtime_store()
+    source = create_genesis("production-persistence-source", "2026-09-30T00:00:00Z")
+    target = create_genesis("production-persistence-target", "2026-09-30T00:00:00Z")
+    relation = create_relation(
+        source.id,
+        target.id,
+        "production-persistence",
+        "2026-09-30T00:00:00Z",
+    )
+
+    preexisting = (
+        store.get_genesis(source.id) is not None
+        and store.get_genesis(target.id) is not None
+        and store.get_relation(relation.id) is not None
+    )
+    store.save_genesis(source)
+    store.save_genesis(target)
+    store.save_relation(relation)
+    store.close()
+
+    reopened = create_runtime_store()
+    persisted_source = reopened.get_genesis(source.id)
+    persisted_target = reopened.get_genesis(target.id)
+    persisted_relation = reopened.get_relation(relation.id)
+    passed = (
+        persisted_source == source
+        and persisted_target == target
+        and persisted_relation == relation
+        and persisted_relation is not None
+        and persisted_relation.source_id == source.id
+        and persisted_relation.target_id == target.id
+    )
+    reopened.close()
+
+    if not passed:
+        raise RuntimeError("persistence probe failed")
+
+    print(
+        json.dumps(
+            {
+                "persistence_probe": "passed",
+                "preexisting": preexisting,
+                "genesis": [source.id, target.id],
+                "relation": relation.id,
+            },
+            sort_keys=True,
+        ),
+        flush=True,
+    )
+
+
 def serve() -> None:
+    run_persistence_probe()
     server = ThreadingHTTPServer(("0.0.0.0", runtime_port()), RuntimeHandler)
     try:
         server.serve_forever()
