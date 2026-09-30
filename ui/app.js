@@ -2,7 +2,8 @@ const state = {
   genesis: [],
   relations: [],
   closures: [],
-  events: []
+  events: [],
+  control: null
 };
 
 const $ = (id) => document.getElementById(id);
@@ -46,6 +47,84 @@ async function loadState() {
   state.closures = data.closures || [];
   state.events = data.events || [];
   render();
+}
+
+
+function formatNumber(value, digits = 2) {
+  return Number(value).toFixed(digits);
+}
+
+function renderControl() {
+  const control = state.control;
+  const metrics = $("f10-metrics");
+  const feedback = $("feedback-state");
+  const cycles = $("cycle-list");
+  const status = $("control-status");
+
+  if (!control) return;
+
+  status.textContent = control.all_converged ? "CONVERGED" : "CHECK";
+  status.className = "tag " + (control.all_converged ? "tag-ok" : "tag-warn");
+
+  const latest = control.cycles[control.cycles.length - 1];
+  metrics.className = "metric-grid";
+  metrics.innerHTML = [
+    ["K", latest.metrics.k, "> 0.80"],
+    ["C", latest.metrics.c, "< 0.30"],
+    ["R", latest.metrics.r, "> 5"],
+    ["Φ", latest.metrics.phi, "> 0.70"]
+  ].map(function(item) {
+    return '<div class="metric compact"><span>' + item[0] + '</span><strong>' +
+      formatNumber(item[1]) + '</strong><small>' + item[2] + '</small></div>';
+  }).join("");
+
+  const allocation = control.allocation;
+  const improved = control.cycles.find(function(cycle) { return cycle.learning.verified_improvement; });
+  feedback.className = "feedback";
+  feedback.innerHTML =
+    '<div class="feedback-flow"><span>Verified improvement</span><b>→</b><span>Ω-Credit</span><b>→</b>' +
+    '<span>+' + formatNumber(allocation.improvement_bonus * 100, 0) + '% weight</span><b>→</b><span>next resources</span></div>' +
+    '<div class="feedback-values"><div><small>Improving cycle</small><strong>' +
+    (improved ? "#" + improved.index : "—") + '</strong></div><div><small>Memory budget</small><strong>' +
+    formatNumber(allocation.total_memory) + '</strong></div><div><small>Compute budget</small><strong>' +
+    formatNumber(allocation.total_compute) + '</strong></div></div>';
+
+  cycles.className = "cycle-list";
+  cycles.innerHTML = control.cycles.map(function(cycle) {
+    return '<div class="cycle-card"><div class="cycle-head"><strong>Cycle ' + cycle.index +
+      '</strong><span class="tag ' + (cycle.learning.verified_improvement ? "tag-ok" : "") + '">' +
+      (cycle.learning.verified_improvement ? "VERIFIED IMPROVEMENT" : (cycle.metrics.converged ? "CONVERGED" : "CHECK")) +
+      '</span></div><div class="cycle-grid">' +
+      '<div><small>Proposal</small><strong>' + text(cycle.proposal) + '</strong><code>' + text(cycle.proposal_id) + '</code></div>' +
+      '<div><small>Evidence</small><strong>Memory dependency: ' + (cycle.learning.memory_dependency ? "yes" : "no") +
+      '</strong><code>' + text(cycle.parent_memory_id || "—") + '</code></div>' +
+      '<div><small>Outcome / utility</small><strong>' + formatNumber(cycle.utility) + '</strong><code>' +
+      text(cycle.outcome_id) + '</code></div>' +
+      '<div><small>Ω-Credit</small><strong>' + formatNumber(cycle.omega_credit) + '</strong><code>state v' +
+      control.state_versions[cycle.index - 1] + '</code></div></div></div>';
+  }).join("");
+}
+
+async function runControlDemo() {
+  const button = $("run-control-demo");
+  button.disabled = true;
+  button.textContent = "Running…";
+  try {
+    const response = await fetch("/v1/control/demo", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: "{}"
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Control Room demo failed");
+    state.control = data;
+    renderControl();
+  } catch (error) {
+    addEvent("ERROR", error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Run 3-cycle demo";
+  }
 }
 
 function renderGenesisOptions() {
@@ -137,6 +216,7 @@ function render() {
   renderRelations();
   renderClosures();
   renderEvents();
+  renderControl();
 }
 
 $("genesis-created-at").value = nowInputValue();
@@ -201,3 +281,5 @@ $("closure-form").addEventListener("submit", async (event) => {
 });
 
 loadState().catch((error) => addEvent("ERROR", error.message));
+
+$("run-control-demo").addEventListener("click", runControlDemo);
