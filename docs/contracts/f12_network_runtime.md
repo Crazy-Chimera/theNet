@@ -61,3 +61,23 @@ The epoch therefore has an explicit audit interpretation:
 The persisted audit event is evidence of the transition that produced the epoch. Historical snapshots continue to reference their own epoch and remain immutable.
 
 The F11 cryptographic handshake contract remains the trust boundary for signatures; F12 session registration does not replace that verification. F12 adds persistence-level replay protection around an already-completed handshake.
+
+
+## F12.10–F12.12 runtime hardening
+
+### Agent lifecycle
+The live registry exposes an explicit lifecycle projection through `lifecycle(agent_id)`:
+- `ACTIVE`: membership is currently active.
+- `REMOVED`: membership is retained historically but no longer active.
+
+Discovery now requires the requesting Agent itself to be active. A removed or unknown Agent cannot use the live peer-discovery surface.
+
+### Signed peer announcements
+`PeerAnnouncement` binds:
+`network_id + agent_id + identity_did + epoch + status`
+to an Ed25519 signature. Verification therefore checks that the announcement belongs to the expected network and immutable Agent identity before accepting its signed state.
+
+### Fresh computation guard
+`run_snapshot_collective_computation(..., require_current_snapshot=True)` explicitly requires the supplied membership snapshot to match the current live membership epoch before computation starts.
+
+This is deliberately opt-in: historical snapshot execution remains available for reproducibility, while fresh-start callers can enforce current membership safety.
