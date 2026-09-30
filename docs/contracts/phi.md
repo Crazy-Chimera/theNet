@@ -54,11 +54,12 @@ The adapter does not trust, verify, score, or interpret the observation.
 7. Equivalent relation sets produce the same structure ID independent of input order.
 8. Adding or removing a distinct relation changes structure identity.
 9. Observation adapter rejects non-Observation input.
-10. Observation adapter rejects any relation set whose IDs differ from observation.relation_ids.
-11. Φ does not infer meaning from a relation.
-12. Φ does not verify relations.
-13. Φ does not perform consensus, contribution, memory, convergence, or expression.
-14. No external-service dependency.
+10. Observation adapter rejects duplicate supplied relation IDs.
+11. Observation adapter rejects any relation set whose IDs differ from observation.relation_ids.
+12. Φ does not infer meaning from a relation.
+13. Φ does not verify relations.
+14. Φ does not perform consensus, contribution, memory, convergence, or expression.
+15. No external-service dependency.
 
 ## Boundary
 
