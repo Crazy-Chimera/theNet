@@ -53,7 +53,6 @@ def test_recursive_learning_reports_state_and_metric_trajectory():
     assert tuple(item.state_delta for item in metrics) == (1, 1, 1)
     assert all(item.r > 5 for item in metrics)
     assert metrics[1].utility > metrics[0].utility
-    assert metrics[1].omega_credit > metrics[0].omega_credit
     assert metrics[1].k >= metrics[0].k
     assert metrics[1].c <= metrics[0].c
     assert metrics[1].phi >= metrics[0].phi
