@@ -20,7 +20,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--version", action="version", version="0.1.0")
 
-    commands = parser.add_subparsers(dest="command", required=True)
+    commands = parser.add_subparsers(dest="command")
 
     genesis = commands.add_parser("genesis", help="create a Genesis state")
     genesis.add_argument("--subject", required=True)
@@ -59,6 +59,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        if args.command is None:
+            from thenet.server import serve
+
+            serve()
+            return 0
+
         if args.command == "genesis":
             _emit(create_genesis(args.subject, args.created_at))
             return 0
