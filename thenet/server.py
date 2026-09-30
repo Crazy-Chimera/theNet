@@ -29,6 +29,8 @@ from src.postgres_store import PostgresStore
 from src.relation import create_relation
 from src.sqlite_store import SQLiteStore
 from thenet.engine import build_closure, run_recursive_convergence_mvp
+from src.network_lifecycle import run_network_lifecycle_mvp
+from tempfile import TemporaryDirectory
 
 UI_ROOT = Path(__file__).resolve().parents[1] / "ui"
 _STATE_LOCK = Lock()
@@ -70,7 +72,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
 
         if path == "/health":
-            self._json(HTTPStatus.OK, {"status": "ready", "version": "0.1.0"})
+            self._json(HTTPStatus.OK, {"status": "ready", "version": "3.0.0-mvp"})
             return
 
         if path == "/v1/control/ledger":
@@ -107,6 +109,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
         routes = {
             "/v1/genesis": self._create_genesis,
             "/v1/relations": self._create_relation,
+            "/v1/network/lifecycle": self._network_lifecycle,
             "/v1/closure": self._build_closure,
             "/v1/control/demo": self._control_demo,
             "/v1/control/query": self._control_query,
@@ -139,6 +142,25 @@ class RuntimeHandler(BaseHTTPRequestHandler):
 
     def log_message(self, _format: str, *_args: object) -> None:
         return
+
+    def _network_lifecycle(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Run the complete isolated theNet 3.0 lifecycle MVP."""
+        created_at = self._required_string(payload, "created_at")
+        proposal_text = self._required_string(payload, "proposal_text")
+        with TemporaryDirectory(prefix="thenet3-") as workdir:
+            result = run_network_lifecycle_mvp(
+                database=Path(workdir) / "runtime.db",
+                vault_path=Path(workdir) / "vault",
+                password="thenet3-mvp",
+                created_at=created_at,
+                proposal_text=proposal_text,
+            )
+        with _STATE_LOCK:
+            _STATE["events"].insert(
+                0,
+                self._event("NETWORK_LIFECYCLE", f"theNet 3.0 lifecycle completed: {result.network_id}"),
+            )
+        return asdict(result)
 
     def _create_genesis(self, payload: dict[str, Any]) -> dict[str, Any]:
         result = create_genesis(
