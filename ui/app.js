@@ -210,6 +210,50 @@ async function runCounterfactual() {
   }
 }
 
+async function runStateDiff() {
+  const button = $("run-state-diff");
+  const result = $("state-diff-result");
+  const cycleIndex = Number($("counterfactual-cycle").value);
+  const proposalText = $("counterfactual-proposal").value.trim();
+  if (!proposalText) {
+    addEvent("ERROR", "Counterfactual proposal is required.");
+    return;
+  }
+  button.disabled = true;
+  button.textContent = "Diffing…";
+  try {
+    const data = await api("/v1/control/state-diff", {
+      cycle_index: cycleIndex,
+      proposal_text: proposalText
+    });
+    const diff = data.state_diff;
+    const changed = (diff.fields || []).filter(function(item) { return item.changed; });
+    result.className = "state-diff-result";
+    result.innerHTML =
+      '<div class="trace-summary">' +
+      '<div><small>First divergence</small><strong>C' + text(diff.first_divergence_cycle) +
+      ' · ' + text(diff.first_divergence_artifact) + '</strong></div>' +
+      '<div><small>Propagation cycles</small><strong>' + text(diff.propagation_cycles.join(" → ")) + '</strong></div>' +
+      '<div><small>Changed fields</small><strong>' + text(diff.changed_field_count) + '</strong></div>' +
+      '</div>' +
+      '<div class="state-diff-list">' +
+      changed.map(function(item) {
+        const delta = item.delta == null ? "" : " Δ" + formatNumber(item.delta);
+        return '<div class="state-diff-row"><span>C' + text(item.cycle_index) + '</span>' +
+          '<strong>' + text(item.scope) + '.' + text(item.field) + '</strong>' +
+          '<code>' + text(JSON.stringify(item.baseline)) + '</code><b>→</b>' +
+          '<code>' + text(JSON.stringify(item.counterfactual)) + '</code>' +
+          '<span>' + text(delta) + '</span></div>';
+      }).join("") +
+      '</div>';
+  } catch (error) {
+    addEvent("ERROR", error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Diff runtime state";
+  }
+}
+
 async function runCausalTrace() {
   const button = $("run-causal-trace");
   const result = $("causal-trace-result");
@@ -612,6 +656,7 @@ $("run-graph-query").addEventListener("click", runGraphQuery);
 $("run-replay").addEventListener("click", runReplay);
 $("run-counterfactual").addEventListener("click", runCounterfactual);
 $("run-causal-trace").addEventListener("click", runCausalTrace);
+$("run-state-diff").addEventListener("click", runStateDiff);
 
 $("genesis-created-at").value = nowInputValue();
 $("relation-created-at").value = nowInputValue();
