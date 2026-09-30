@@ -19,6 +19,7 @@ def _ledger(proposal):
     fingerprint = fingerprint_experiment_matrix(matrix, build_evidence_graph(baseline).id)
     return create_experiment_ledger_record(
         matrix=matrix, fingerprint=fingerprint,
+        run_id="run-" + proposal,
         created_at="2026-09-30T12:00:00Z",
     )
 
