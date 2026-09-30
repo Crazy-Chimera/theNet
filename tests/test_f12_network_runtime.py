@@ -62,3 +62,25 @@ def test_stale_snapshot_can_be_detected_after_membership_change(tmp_path):
     runtime.remove_agent("agent-2")
     with pytest.raises(ValueError,match="stale"):
         runtime.validate_snapshot_current(snapshot)
+
+
+def test_handshake_replay_is_rejected(tmp_path):
+    boot=bootstrap(tmp_path)
+    runtime=NetworkRuntime(tmp_path/"runtime.db",boot.network)
+    for item in boot.agents: runtime.add_agent(item.admission.membership,item.agent)
+    runtime.register_handshake(boot.handshakes[0],created_at="2026-09-30T00:20:00Z")
+    with pytest.raises(ValueError,match="replay"):
+        runtime.register_handshake(boot.handshakes[0],created_at="2026-09-30T00:21:00Z")
+
+
+def test_membership_epoch_has_audit_events(tmp_path):
+    boot=bootstrap(tmp_path)
+    runtime=NetworkRuntime(tmp_path/"runtime.db",boot.network)
+    for item in boot.agents: runtime.add_agent(item.admission.membership,item.agent)
+    events=runtime.membership_events()
+    assert len(events)==3
+    assert tuple(e[1] for e in events)==(1,2,3)
+    runtime.remove_agent("agent-2")
+    events=runtime.membership_events()
+    assert events[-1][1]==4
+    assert events[-1][2:4]==("agent-2","leave")
