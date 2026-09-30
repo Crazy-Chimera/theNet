@@ -152,6 +152,23 @@ class PostgresStore:
             rows = cursor.fetchall()
         return tuple(self._decode_relation(row[0]) for row in rows)
 
+    def save_experiment_ledger(self, record) -> None:
+        self._save("experiment_ledger", record.id, self._encode(record.as_dict()))
+
+    def get_experiment_ledger(self, record_id: str) -> dict | None:
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                "SELECT payload FROM experiment_ledger WHERE id = %s", (record_id,)
+            )
+            row = cursor.fetchone()
+        return None if row is None else json.loads(row[0])
+
+    def list_experiment_ledger(self) -> tuple[dict, ...]:
+        with self._connection.cursor() as cursor:
+            cursor.execute("SELECT payload FROM experiment_ledger ORDER BY id")
+            rows = cursor.fetchall()
+        return tuple(json.loads(row[0]) for row in rows)
+
     def close(self) -> None:
         self._connection.close()
 
