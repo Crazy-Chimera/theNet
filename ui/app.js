@@ -166,6 +166,20 @@ async function runReplay() {
     status.textContent = data.deterministic ? "DETERMINISTIC MATCH" : "MISMATCH";
     status.className = "tag " + (data.deterministic ? "tag-ok" : "tag-warn");
     result.className = "replay-result";
+    const divergence = data.first_divergence_cycle == null
+      ? '<div class="replay-divergence ok"><strong>No divergence detected.</strong> All artifact IDs match.</div>'
+      : '<div class="replay-divergence warn"><strong>First divergence:</strong> cycle ' +
+        text(data.first_divergence_cycle) + ' · ' + text(data.first_divergence_artifact) +
+        '<br><code>' + text(data.first_divergence_original_id) + '</code> → <code>' +
+        text(data.first_divergence_replay_id) + '</code></div>';
+    const artifactRows = (data.artifact_comparisons || []).map(function(item) {
+      return '<div class="replay-artifact ' + (item.match ? 'match' : 'diverge') + '">' +
+        '<span>C' + text(item.cycle_index) + '</span>' +
+        '<strong>' + text(item.artifact_type) + '</strong>' +
+        '<code>' + text(item.original_id) + '</code><b>→</b><code>' +
+        text(item.replay_id) + '</code><span>' + (item.match ? '✓' : '✕') + '</span></div>';
+    }).join("");
+    result.className = "replay-result";
     result.innerHTML =
       '<div class="replay-grid">' +
       '<div><small>Original graph</small><code>' + text(data.original_graph_id) + '</code></div>' +
@@ -174,7 +188,8 @@ async function runReplay() {
       '<div><small>Run match</small><strong>' + (data.run_match ? "✓" : "✕") + '</strong></div>' +
       '<div><small>Artifact match</small><strong>' + (data.artifact_match ? "✓" : "✕") + '</strong></div>' +
       '<div><small>Cycles</small><strong>' + text(data.original_cycles) + " → " + text(data.replay_cycles) + '</strong></div>' +
-      '</div>';
+      '</div>' + divergence +
+      '<div class="replay-artifacts">' + artifactRows + '</div>';
   } catch (error) {
     status.textContent = "ERROR";
     status.className = "tag tag-warn";
