@@ -827,3 +827,35 @@ button:disabled { opacity: .55; cursor: wait; }
   .query-summary { flex-direction: column; }
   .query-edges > div { grid-template-columns: 1fr; }
 }
+
+
+.replay-divergence {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  line-height: 1.5;
+}
+.replay-divergence.ok { border-color: rgba(64, 190, 120, .45); }
+.replay-divergence.warn { border-color: rgba(230, 170, 70, .55); }
+.replay-artifacts {
+  margin-top: 12px;
+  max-height: 360px;
+  overflow: auto;
+  border-top: 1px solid var(--border);
+}
+.replay-artifact {
+  display: grid;
+  grid-template-columns: 42px 120px minmax(0, 1fr) 18px minmax(0, 1fr) 20px;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.replay-artifact.diverge { background: rgba(230, 170, 70, .08); }
+.replay-artifact code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
