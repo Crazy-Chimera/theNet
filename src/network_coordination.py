@@ -94,6 +94,10 @@ def create_coordination_record(
     announcement: WorkAnnouncement | None = None,
 ) -> CoordinationRecord:
     records = tuple(verifications)
+    if any(record.proposal_id != proposal.id for record in records):
+        raise ValueError("verification belongs to another proposal")
+    if any(not record.valid for record in records):
+        raise ValueError("coordination requires valid verifications")
     verifier_ids = tuple(record.verifier_id for record in records)
     if announcement is None:
         announcement = create_work_announcement(snapshot, proposal)
