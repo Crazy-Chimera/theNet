@@ -24,6 +24,7 @@ from src.verification import Verification
 from src.contribution_ledger import ContributionLedger, create_contribution_ledger
 from src.execution_ledger import ExecutionRecord, create_execution_record
 from src.outcome import ComputationOutcome, create_computation_outcome
+from src.convergence_metrics import ConvergenceMetrics, measure_convergence_metrics
 from src.omega_credit_resource_commitment import apply_omega_credit_allocation
 
 
@@ -43,6 +44,7 @@ class CollectiveComputationResult:
     memory_resource: ResourceState
     compute_resource: ResourceState
     state: AgentState
+    metrics: ConvergenceMetrics
 
 
 def run_collective_computation(
