@@ -7,6 +7,7 @@ const state = {
   evidenceGraph: null,
   replay: null,
   counterfactual: null,
+  causalTrace: null,
   query: null
 };
 
@@ -206,6 +207,48 @@ async function runCounterfactual() {
   } finally {
     button.disabled = false;
     button.textContent = "Run counterfactual";
+  }
+}
+
+async function runCausalTrace() {
+  const button = $("run-causal-trace");
+  const result = $("causal-trace-result");
+  const cycleIndex = Number($("counterfactual-cycle").value);
+  const proposalText = $("counterfactual-proposal").value.trim();
+  if (!proposalText) {
+    addEvent("ERROR", "Counterfactual proposal is required.");
+    return;
+  }
+  button.disabled = true;
+  button.textContent = "Tracing…";
+  try {
+    const data = await api("/v1/control/causal-trace", {
+      cycle_index: cycleIndex,
+      proposal_text: proposalText
+    });
+    state.causalTrace = data.trace;
+    const trace = data.trace;
+    const steps = (trace.steps || []).map(function(step) {
+      return '<div class="trace-step ' + (step.changed ? 'changed' : 'stable') + '">' +
+        '<span>C' + text(step.cycle_index) + '</span>' +
+        '<code>' + text(step.source_type) + ':' + text(step.source_counterfactual_id) + '</code>' +
+        '<b>—' + text(step.relation) + '→</b>' +
+        '<code>' + text(step.target_type) + ':' + text(step.target_counterfactual_id) + '</code>' +
+        '<span>' + (step.changed ? '✕ changed' : '✓ stable') + '</span></div>';
+    }).join("");
+    result.className = "causal-trace-result";
+    result.innerHTML =
+      '<div class="trace-summary">' +
+      '<div><small>First divergence</small><strong>C' + text(trace.first_divergence_cycle) +
+      ' · ' + text(trace.first_divergence_artifact) + '</strong></div>' +
+      '<div><small>Propagation cycles</small><strong>' + text(trace.propagation_cycles.join(" → ")) + '</strong></div>' +
+      '<div><small>Changed artifacts</small><strong>' + text(trace.changed_artifacts.length) + '</strong></div>' +
+      '</div><div class="trace-steps">' + steps + '</div>';
+  } catch (error) {
+    addEvent("ERROR", error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Trace dependency chain";
   }
 }
 
@@ -568,6 +611,7 @@ function render() {
 $("run-graph-query").addEventListener("click", runGraphQuery);
 $("run-replay").addEventListener("click", runReplay);
 $("run-counterfactual").addEventListener("click", runCounterfactual);
+$("run-causal-trace").addEventListener("click", runCausalTrace);
 
 $("genesis-created-at").value = nowInputValue();
 $("relation-created-at").value = nowInputValue();
