@@ -110,6 +110,41 @@ def test_control_room_replay_is_deterministic():
         stop_server(server, thread)
 
 
+def test_control_room_counterfactual_replay_diverges_at_selected_cycle():
+    server, thread = start_server()
+    try:
+        request = Request(
+            f"http://127.0.0.1:{server.server_port}/v1/control/counterfactual",
+            data=json.dumps({
+                "cycle_index": 2,
+                "proposal_text": "counterfactual hypothesis",
+            }).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(request) as response:
+            payload = json.load(response)
+            assert response.status == 200
+            assert payload["cycle_index"] == 2
+            assert payload["baseline_cycles"] == 3
+            assert payload["counterfactual_cycles"] == 3
+            assert payload["diverged"] is True
+            assert payload["replay"]["first_divergence_cycle"] == 2
+            assert payload["replay"]["first_divergence_artifact"] == "proposal"
+            assert all(
+                item["match"]
+                for item in payload["replay"]["artifact_comparisons"]
+                if item["cycle_index"] == 1
+            )
+            assert any(
+                not item["match"]
+                for item in payload["replay"]["artifact_comparisons"]
+                if item["cycle_index"] >= 2
+            )
+    finally:
+        stop_server(server, thread)
+
+
 def test_control_room_query_traces_evidence_path():
     server, thread = start_server()
     try:
