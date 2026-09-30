@@ -1,5 +1,6 @@
 from src.phi_structure import PhiStructure, create_phi_structure
 from src.relation import create_relation
+from src.structure import create_phi_structure as canonical_create_phi_structure
 
 
 def relation(source: str, target: str, kind: str = "connect"):
@@ -10,7 +11,7 @@ def test_phi_compatibility_entry_point_matches_canonical_implementation():
     first = relation("a", "b")
     second = relation("b", "c")
 
-    canonical = create_phi_structure([first, second])
+    canonical = canonical_create_phi_structure([first, second])
     compatibility = create_phi_structure([second, first])
 
     assert isinstance(compatibility, PhiStructure)
