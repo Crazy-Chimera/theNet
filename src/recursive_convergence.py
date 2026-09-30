@@ -13,7 +13,7 @@ from src.agent_state import AgentState
 from src.collective_runtime import CollectiveComputationResult, run_collective_computation
 from src.genesis_population import GenesisPopulation
 from src.proposal import Proposal, create_proposal
-from src.resource_state import ResourceState
+from src.resource_state import ResourceState, create_resource_state
 from src.verification import create_verification
 from src.recursive_learning_metrics import RecursiveLearningMetrics, measure_recursive_learning
 from src.adaptive_resource_allocation import AdaptiveResourceAllocation, create_adaptive_resource_allocation
@@ -98,6 +98,9 @@ def run_recursive_convergence(
     compute_resource: ResourceState,
     utility: float = 1.0,
     utility_builder: UtilityBuilder | None = None,
+    adaptive_memory_capacity: float | None = None,
+    adaptive_compute_capacity: float | None = None,
+    improvement_bonus: float = 0.25,
 ) -> RecursiveConvergenceRun:
     """Run deterministic proposal→outcome→memory→next-proposal cycles.
 
@@ -124,6 +127,10 @@ def run_recursive_convergence(
         raise ValueError("created_at must be a non-empty tuple")
     if len(created_at) < 1:
         raise ValueError("created_at must not be empty")
+    if adaptive_memory_capacity is not None and adaptive_memory_capacity < 0:
+        raise ValueError("adaptive_memory_capacity must be non-negative")
+    if adaptive_compute_capacity is not None and adaptive_compute_capacity < 0:
+        raise ValueError("adaptive_compute_capacity must be non-negative")
 
     verifiers = population.agents[1:]
     if quorum < 1 or quorum > len(verifiers):
@@ -132,6 +139,12 @@ def run_recursive_convergence(
     state = initial_state
     memory = memory_resource
     compute = compute_resource
+    feedback_memory_capacity = (
+        memory_resource.available if adaptive_memory_capacity is None else adaptive_memory_capacity
+    )
+    feedback_compute_capacity = (
+        compute_resource.available if adaptive_compute_capacity is None else adaptive_compute_capacity
+    )
     cycles: list[RecursiveCycle] = []
     prior_commits = []
 
@@ -189,6 +202,30 @@ def run_recursive_convergence(
         state = result.state
         memory = result.memory_resource
         compute = result.compute_resource
+
+        # F10.3: verified learning from this cycle becomes the resource budget
+        # for the next cycle. Only the latest measured cycle can influence the
+        # immediately following budget; no future result is available yet.
+        if index < len(created_at):
+            learning = measure_recursive_learning(tuple(cycles))
+            allocation = create_adaptive_resource_allocation(
+                (learning[-1],),
+                feedback_memory_capacity,
+                feedback_compute_capacity,
+                improvement_bonus=improvement_bonus,
+            )
+            allocated_memory = allocation.memory_by_cycle[-1][1] if allocation.memory_by_cycle else 0.0
+            allocated_compute = allocation.compute_by_cycle[-1][1] if allocation.compute_by_cycle else 0.0
+            memory = create_resource_state(
+                available=allocated_memory,
+                used=0.0,
+                created_at=f"{timestamp}:F10.3:memory",
+            )
+            compute = create_resource_state(
+                available=allocated_compute,
+                used=0.0,
+                created_at=f"{timestamp}:F10.3:compute",
+            )
 
     return RecursiveConvergenceRun(
         cycles=tuple(cycles),
