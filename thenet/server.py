@@ -19,6 +19,7 @@ from src.evidence_graph import build_evidence_graph
 from src.evidence_query import query_evidence_graph, trace_evidence_path
 from src.replay import compare_recursive_replay
 from src.counterfactual_replay import CounterfactualSpec, run_counterfactual
+from src.causal_trace import build_causal_trace
 from src.postgres_store import PostgresStore
 from src.relation import create_relation
 from src.sqlite_store import SQLiteStore
@@ -90,6 +91,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             "/v1/control/query": self._control_query,
             "/v1/control/replay": self._control_replay,
             "/v1/control/counterfactual": self._control_counterfactual,
+            "/v1/control/causal-trace": self._control_causal_trace,
         }
         path = urlparse(self.path).path
         handler = routes.get(path)
@@ -193,7 +195,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             utility_builder=lambda index, previous: min(float(index) / 2.0, 1.0),
         )
 
-    def _control_counterfactual(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def _control_causal_trace(self, payload: dict[str, Any]) -> dict[str, Any]:
         cycle_index = payload.get("cycle_index")
         if isinstance(cycle_index, bool) or not isinstance(cycle_index, int):
             raise ValueError("cycle_index must be an integer")
@@ -205,11 +207,12 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             spec=spec,
             runner=lambda overrides: self._control_run(overrides),
         )
-        result = comparison.as_dict()
-        result["counterfactual_cycle_count"] = counterfactual.cycle_count
-        result["counterfactual_state_versions"] = list(counterfactual.state_versions)
-        result["counterfactual_all_converged"] = counterfactual.all_converged
-        return result
+        trace = build_causal_trace(comparison, baseline, counterfactual)
+        return {
+            "comparison": comparison.as_dict(),
+            "trace": trace.as_dict(),
+            "counterfactual_state_versions": list(counterfactual.state_versions),
+        }
 
 
     def _control_demo(self, payload: dict[str, Any]) -> dict[str, Any]:
