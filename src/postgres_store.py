@@ -43,7 +43,8 @@ class PostgresStore:
                     payload TEXT NOT NULL
                 )
                 """
-            )            cursor.execute(
+            )
+            cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS memories (
                     id TEXT PRIMARY KEY,
