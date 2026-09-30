@@ -10,7 +10,7 @@ from typing import Any
 from websockets.asyncio.client import connect
 from websockets.asyncio.server import Server, ServerConnection, serve
 
-from src.identity import Identity, Signature, verify_signature
+from src.identity import Identity, IdentityVault, Signature, verify_signature
 
 
 @dataclass(frozen=True)
