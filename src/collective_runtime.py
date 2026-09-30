@@ -189,6 +189,17 @@ def run_collective_computation(
         new_singularity_id,
         created_at,
     )
+    metrics = measure_convergence_metrics(
+        current_state=current_state,
+        next_state=state,
+        consensus=consensus,
+        convergence=convergence,
+        commit=commit,
+        outcome=outcome,
+        memory=memory,
+        utility=relational_utility,
+        phi=phi,
+    )
 
     return CollectiveComputationResult(
         consensus=consensus,
@@ -205,6 +216,7 @@ def run_collective_computation(
         memory_resource=memory_after,
         compute_resource=compute_after,
         state=state,
+        metrics=metrics,
     )
 
 
