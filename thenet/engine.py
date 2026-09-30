@@ -48,6 +48,7 @@ from src.execution_ledger import ExecutionRecord
 from src.execution_audit import ExecutionAudit, create_execution_audit
 from src.resource_state import ResourceState
 from src.recursive_convergence import RecursiveConvergenceRun, run_recursive_convergence
+from src.replay import ReplayComparison, compare_recursive_replay
 from src.adaptive_resource_allocation import AdaptiveResourceAllocation, create_adaptive_resource_allocation
 from src.omega_credit_self_organizing_commitment import (
     commit_ledger_backed_allocation_with_record,
@@ -365,6 +366,14 @@ def run_collective_computation_mvp(
         utility=utility,
         prior_commits=() if prior_commits is None else prior_commits,
     )
+
+
+def compare_recursive_replay_mvp(
+    original: RecursiveConvergenceRun,
+    replay: RecursiveConvergenceRun,
+) -> ReplayComparison:
+    """Compare two recursive MVP runs through the canonical replay engine."""
+    return compare_recursive_replay(original, replay)
 
 
 def run_recursive_convergence_mvp(
