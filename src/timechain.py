@@ -202,7 +202,7 @@ def merge_branches(
     if not isinstance(left, TimechainBranch) or not isinstance(right, TimechainBranch):
         raise TypeError("branches must be TimechainBranch")
     if left.base_state_id != right.base_state_id:
-        raise ValueError("branches must share a base state")
+        raise ValueError("branches do not have a shared base")
     if not isinstance(merged_state_id, str) or not merged_state_id.strip():
         raise ValueError("merged_state_id must be non-empty")
     if not isinstance(created_at, str) or not created_at.strip():
