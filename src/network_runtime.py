@@ -22,6 +22,13 @@ class PeerDescriptor:
     version: int = 1
 
 @dataclass(frozen=True)
+class AgentLifecycle:
+    agent_id: str
+    state: str
+    epoch: int
+    version: int = 1
+
+@dataclass(frozen=True)
 class SessionState:
     session_id: str
     network_id: str
@@ -75,6 +82,14 @@ class NetworkRuntime:
             rows=db.execute("SELECT event_id,epoch,agent_id,event_type,created_at FROM network_runtime_membership_events WHERE network_id=? ORDER BY epoch,event_id",(self.network.network_id,)).fetchall()
         return tuple((r["event_id"],r["epoch"],r["agent_id"],r["event_type"],r["created_at"]) for r in rows)
 
+    def lifecycle(self, agent_id: str) -> AgentLifecycle:
+        with self._connect() as db:
+            row=db.execute("SELECT status FROM network_runtime_members WHERE agent_id=? AND network_id=?",(agent_id,self.network.network_id)).fetchone()
+            if row is None: raise KeyError(f"unknown agent: {agent_id}")
+            epoch=int(db.execute("SELECT epoch FROM network_runtime_epochs WHERE network_id=?",(self.network.network_id,)).fetchone()["epoch"])
+        state = "ACTIVE" if row["status"] == "active" else "REMOVED"
+        return AgentLifecycle(agent_id,state,epoch)
+
     def add_agent(self,membership: NetworkMembership,agent: AgentIdentity)->PeerDescriptor:
         if not isinstance(membership,NetworkMembership) or not isinstance(agent,AgentIdentity): raise TypeError("invalid membership or agent")
         if membership.network_id!=self.network.network_id: raise ValueError("membership belongs to another network")
@@ -101,7 +116,10 @@ class NetworkRuntime:
         with self._connect() as db: rows=db.execute("SELECT agent_id,identity_did,role,status,network_id,genesis_id FROM network_runtime_members WHERE network_id=? AND status='active' ORDER BY agent_id",(self.network.network_id,)).fetchall()
         return tuple(PeerDescriptor(r["agent_id"],r["identity_did"],r["role"],r["status"],r["network_id"],r["genesis_id"]) for r in rows)
 
-    def discover_peers(self,agent_id:str)->tuple[PeerDescriptor,...]: return tuple(p for p in self.active_members() if p.agent_id!=agent_id)
+    def discover_peers(self,agent_id:str)->tuple[PeerDescriptor,...]:
+        if agent_id not in {p.agent_id for p in self.active_members()}:
+            raise ValueError("peer discovery requires an active agent")
+        return tuple(p for p in self.active_members() if p.agent_id!=agent_id)
 
     def register_handshake(self,handshake:Handshake,*,created_at:str)->SessionState:
         if handshake.network_id!=self.network.network_id: raise ValueError("handshake belongs to another network")
@@ -167,4 +185,4 @@ class NetworkRuntime:
         if len(ids)<snapshot.quorum: raise ValueError("snapshot quorum has not been reached")
 
 def _hash(payload:dict)->str: return sha256(_json.dumps(payload,sort_keys=True,separators=(",",":")).encode()).hexdigest()
-__all__=["MembershipSnapshot","NetworkRuntime","PeerDescriptor","SessionState"]
+__all__=["AgentLifecycle","MembershipSnapshot","NetworkRuntime","PeerDescriptor","SessionState"]
