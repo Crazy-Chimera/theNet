@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 from src.agent_state import AgentState, create_agent_state
 from src.collective_runtime import CollectiveComputationResult, run_collective_computation
+from src.network_collective_runtime import run_snapshot_collective_computation
+from src.network_runtime import MembershipSnapshot, NetworkRuntime
 from src.co_definition import RelationalCoDefinition, create_co_definition
 from src.collective_evolution import CollectiveEvolution, evolve_collectively
 from src.commit import EvolutionCommit, create_evolution_commit
@@ -359,6 +361,47 @@ def run_collective_computation_mvp(
         verifications=verifications,
         quorum=quorum,
         new_singularity_id=new_singularity_id,
+        created_at=created_at,
+        memory_resource=memory_resource,
+        compute_resource=compute_resource,
+        executor=executor,
+        utility=utility,
+        prior_commits=() if prior_commits is None else prior_commits,
+    )
+
+
+
+def create_network_runtime_mvp(
+    database,
+    network,
+    *,
+    created_at: str = "",
+) -> NetworkRuntime:
+    """Create the persistent F12 live network runtime."""
+    return NetworkRuntime(database, network, created_at=created_at)
+
+
+def run_snapshot_collective_computation_mvp(
+    runtime: NetworkRuntime,
+    snapshot: MembershipSnapshot,
+    current_state: AgentState,
+    proposal: Proposal,
+    verifications: list[Verification],
+    created_at: str,
+    memory_resource: ResourceState,
+    compute_resource: ResourceState,
+    executor,
+    *,
+    utility: float = 1.0,
+    prior_commits: list[EvolutionCommit] | None = None,
+) -> CollectiveComputationResult:
+    """Run collective computation against an explicit immutable membership snapshot."""
+    return run_snapshot_collective_computation(
+        runtime=runtime,
+        snapshot=snapshot,
+        current_state=current_state,
+        proposal=proposal,
+        verifications=verifications,
         created_at=created_at,
         memory_resource=memory_resource,
         compute_resource=compute_resource,
