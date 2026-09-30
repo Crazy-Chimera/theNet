@@ -24,6 +24,7 @@ from src.counterfactual_state_diff import build_counterfactual_state_diff
 from src.counterfactual_impact_vector import build_counterfactual_impact_vector
 from src.counterfactual_experiment_matrix import ExperimentCase, run_counterfactual_experiment_matrix
 from src.counterfactual_reproducibility import fingerprint_experiment_matrix
+from src.experiment_ledger import create_experiment_ledger_record
 from src.postgres_store import PostgresStore
 from src.relation import create_relation
 from src.sqlite_store import SQLiteStore
@@ -72,6 +73,22 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             self._json(HTTPStatus.OK, {"status": "ready", "version": "0.1.0"})
             return
 
+        if path == "/v1/control/ledger":
+            with _STATE_LOCK:
+                records = self.server.store.list_experiment_ledger()
+            self._json(HTTPStatus.OK, {"records": list(records)})
+            return
+
+        if path.startswith("/v1/control/ledger/"):
+            record_id = path.rsplit("/", 1)[-1]
+            with _STATE_LOCK:
+                record = self.server.store.get_experiment_ledger(record_id)
+            if record is None:
+                self._json(HTTPStatus.NOT_FOUND, {"status": "not_found"})
+            else:
+                self._json(HTTPStatus.OK, record)
+            return
+
         if path == "/v1/state":
             self._json(HTTPStatus.OK, self._state_snapshot())
             return
@@ -100,6 +117,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             "/v1/control/impact-vector": self._control_impact_vector,
             "/v1/control/experiment-matrix": self._control_experiment_matrix,
             "/v1/control/reproducibility": self._control_reproducibility,
+            "/v1/control/ledger": self._control_ledger,
         }
         path = urlparse(self.path).path
         handler = routes.get(path)
@@ -299,6 +317,37 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             "matrix": matrix.as_dict(),
             "fingerprint": fingerprint.as_dict(),
         }
+
+    def _control_ledger(self, payload: dict[str, Any]) -> dict[str, Any]:
+        baseline = self._control_run()
+        raw_cases = payload.get("cases")
+        if not isinstance(raw_cases, list) or not raw_cases:
+            raise ValueError("cases must be a non-empty list")
+        cases = []
+        for raw in raw_cases:
+            if not isinstance(raw, dict):
+                raise ValueError("each case must be an object")
+            case_id = self._required_string(raw, "id")
+            cycle_index = raw.get("cycle_index")
+            if isinstance(cycle_index, bool) or not isinstance(cycle_index, int):
+                raise ValueError("case cycle_index must be an integer")
+            cases.append(ExperimentCase(
+                case_id, cycle_index, self._required_string(raw, "proposal_text")
+            ))
+        matrix = run_counterfactual_experiment_matrix(
+            baseline=baseline,
+            cases=tuple(cases),
+            runner=lambda overrides: self._control_run(overrides),
+        )
+        baseline_graph_id = build_evidence_graph(baseline).id
+        fingerprint = fingerprint_experiment_matrix(matrix, baseline_graph_id)
+        created_at = payload.get("created_at", "2026-09-30T00:00:00Z")
+        record = create_experiment_ledger_record(
+            matrix=matrix, fingerprint=fingerprint, created_at=created_at
+        )
+        with _STATE_LOCK:
+            self.server.store.save_experiment_ledger(record)
+        return record.as_dict()
 
     def _control_demo(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Run one deterministic three-cycle F10.3 demonstration for Control Room."""
