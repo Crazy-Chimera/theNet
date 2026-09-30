@@ -6,6 +6,7 @@ const state = {
   control: null,
   evidenceGraph: null,
   replay: null,
+  counterfactual: null,
   query: null
 };
 
@@ -149,6 +150,62 @@ async function runGraphQuery() {
   } finally {
     button.disabled = false;
     button.textContent = "Run query";
+  }
+}
+
+async function runCounterfactual() {
+  const button = $("run-counterfactual");
+  const status = $("counterfactual-status");
+  const result = $("counterfactual-result");
+  const cycleIndex = Number($("counterfactual-cycle").value);
+  const proposalText = $("counterfactual-proposal").value.trim();
+  if (!proposalText) {
+    addEvent("ERROR", "Counterfactual proposal is required.");
+    return;
+  }
+  button.disabled = true;
+  button.textContent = "Branching…";
+  status.textContent = "RUNNING";
+  status.className = "tag";
+  try {
+    const data = await api("/v1/control/counterfactual", {
+      cycle_index: cycleIndex,
+      proposal_text: proposalText
+    });
+    state.counterfactual = data;
+    const replay = data.replay;
+    status.textContent = data.diverged ? "DIVERGED" : "NO DIVERGENCE";
+    status.className = "tag " + (data.diverged ? "tag-warn" : "tag-ok");
+    const divergence = replay.first_divergence_cycle == null
+      ? '<div class="replay-divergence ok"><strong>No downstream divergence.</strong> Counterfactual input is artifact-equivalent.</div>'
+      : '<div class="replay-divergence warn"><strong>First downstream divergence:</strong> cycle ' +
+        text(replay.first_divergence_cycle) + ' · ' + text(replay.first_divergence_artifact) +
+        '<br><code>' + text(replay.first_divergence_original_id) + '</code> → <code>' +
+        text(replay.first_divergence_replay_id) + '</code></div>';
+    const rows = (replay.artifact_comparisons || []).map(function(item) {
+      return '<div class="replay-artifact ' + (item.match ? 'match' : 'diverge') + '">' +
+        '<span>C' + text(item.cycle_index) + '</span><strong>' + text(item.artifact_type) +
+        '</strong><code>' + text(item.original_id) + '</code><b>→</b><code>' +
+        text(item.replay_id) + '</code><span>' + (item.match ? '✓' : '✕') + '</span></div>';
+    }).join("");
+    result.className = "replay-result";
+    result.innerHTML =
+      '<div class="replay-grid">' +
+      '<div><small>Baseline graph</small><code>' + text(data.baseline_graph_id) + '</code></div>' +
+      '<div><small>Counterfactual graph</small><code>' + text(data.counterfactual_graph_id) + '</code></div>' +
+      '<div><small>Selected cycle</small><strong>C' + text(data.cycle_index) + '</strong></div>' +
+      '<div><small>Baseline proposal</small><code>' + text(data.baseline_proposal) + '</code></div>' +
+      '<div><small>Counterfactual proposal</small><code>' + text(data.counterfactual_proposal) + '</code></div>' +
+      '<div><small>Convergence</small><strong>' + (data.counterfactual_all_converged ? "✓" : "CHECK") + '</strong></div>' +
+      '</div>' + divergence +
+      '<div class="replay-artifacts">' + rows + '</div>';
+  } catch (error) {
+    status.textContent = "ERROR";
+    status.className = "tag tag-warn";
+    addEvent("ERROR", error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Run counterfactual";
   }
 }
 
@@ -510,6 +567,7 @@ function render() {
 
 $("run-graph-query").addEventListener("click", runGraphQuery);
 $("run-replay").addEventListener("click", runReplay);
+$("run-counterfactual").addEventListener("click", runCounterfactual);
 
 $("genesis-created-at").value = nowInputValue();
 $("relation-created-at").value = nowInputValue();
