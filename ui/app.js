@@ -254,6 +254,35 @@ async function runStateDiff() {
   }
 }
 
+async function runReproducibility() {
+  const button = $("run-reproducibility");
+  const result = $("reproducibility-result");
+  button.disabled = true;
+  button.textContent = "Hashing…";
+  try {
+    const data = await api("/v1/control/reproducibility", {
+      cases: [
+        {id: "A", cycle_index: 2, proposal_text: $("matrix-proposal-a").value.trim()},
+        {id: "B", cycle_index: 3, proposal_text: $("matrix-proposal-b").value.trim()}
+      ]
+    });
+    const fp = data.fingerprint;
+    result.className = "reproducibility-result";
+    result.innerHTML =
+      '<div class="fingerprint-grid">' +
+      '<div><small>Design fingerprint</small><code>' + text(fp.design_fingerprint) + '</code></div>' +
+      '<div><small>Result fingerprint</small><code>' + text(fp.result_fingerprint) + '</code></div>' +
+      '<div><small>Baseline graph</small><code>' + text(fp.baseline_graph_id) + '</code></div>' +
+      '<div><small>Runtime contract</small><strong>' + text(fp.runtime_contract) + '</strong></div>' +
+      '</div>';
+  } catch (error) {
+    addEvent("ERROR", error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Generate reproducibility fingerprint";
+  }
+}
+
 async function runExperimentMatrix() {
   const button = $("run-experiment-matrix");
   const result = $("experiment-matrix-result");
@@ -743,6 +772,7 @@ $("run-causal-trace").addEventListener("click", runCausalTrace);
 $("run-state-diff").addEventListener("click", runStateDiff);
 $("run-impact-vector").addEventListener("click", runImpactVector);
 $("run-experiment-matrix").addEventListener("click", runExperimentMatrix);
+$("run-reproducibility").addEventListener("click", runReproducibility);
 
 $("genesis-created-at").value = nowInputValue();
 $("relation-created-at").value = nowInputValue();
