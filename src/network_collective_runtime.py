@@ -21,12 +21,15 @@ def run_snapshot_collective_computation(
     *,
     utility: float = 1.0,
     prior_commits: Iterable = (),
+    require_current_snapshot: bool = False,
 ) -> CollectiveComputationResult:
     if not isinstance(runtime, NetworkRuntime):
         raise TypeError("runtime must be NetworkRuntime")
     if not isinstance(snapshot, MembershipSnapshot):
         raise TypeError("snapshot must be MembershipSnapshot")
     records = tuple(verifications)
+    if require_current_snapshot:
+        runtime.validate_snapshot_current(snapshot)
     runtime.validate_snapshot_verifiers(
         snapshot, proposal.proposer_id, (record.verifier_id for record in records)
     )
