@@ -29,12 +29,12 @@ The runtime store exposes:
 
 ## Backend progression
 
-Current backend:
+Current interchangeable backends:
 
 `RuntimeStore -> SQLiteStore`
 
-Prepared backend:
-
 `RuntimeStore -> PostgresStore`
 
-PostgreSQL is intentionally not introduced as a runtime dependency at this stage. The contract is backend-neutral so the later PostgreSQL adapter can reuse the same domain and storage tests.
+Both adapters implement the same contract without changing GenesisState or Relation. CI executes the shared backend contract against SQLite and a live PostgreSQL 16 service.
+
+PostgreSQL is introduced only at the storage/runtime boundary through Psycopg 3; the domain primitives remain backend-neutral.
