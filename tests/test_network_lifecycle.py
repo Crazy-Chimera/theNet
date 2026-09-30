@@ -124,3 +124,33 @@ def test_removed_agent_is_excluded_from_next_computation_snapshot(tmp_path):
     assert second.active_agents == ("agent-0", "agent-1")
     assert second.coordination["verifier_ids"] == ("agent-1",)
     assert first.snapshot["snapshot_id"] != second.snapshot["snapshot_id"]
+
+def test_network_lifecycle_service_preserves_removed_membership_after_process_restart(tmp_path):
+    from src.network_lifecycle import NetworkLifecycleService
+
+    db = tmp_path / "runtime.db"
+    vault = tmp_path / "vault"
+    first_service = NetworkLifecycleService(
+        database=db,
+        vault_path=vault,
+        password="test-password",
+        created_at="2026-09-30T06:00:00Z",
+        proposal_text="bootstrap",
+    )
+    first_service.remove_agent("agent-2")
+
+    restarted_service = NetworkLifecycleService(
+        database=db,
+        vault_path=vault,
+        password="test-password",
+        created_at="2026-09-30T06:00:01Z",
+        proposal_text="restart",
+    )
+
+    assert tuple(item.agent_id for item in restarted_service.runtime.active_members()) == (
+        "agent-0",
+        "agent-1",
+    )
+    snapshot = restarted_service.snapshot(created_at="2026-09-30T06:00:02Z")
+    assert snapshot.members == ("agent-0", "agent-1")
+    assert snapshot.quorum == 1
