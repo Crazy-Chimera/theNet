@@ -129,6 +129,21 @@ class SQLiteStore:
         ).fetchall()
         return tuple(self._decode_relation(row[0]) for row in rows)
 
+    def save_experiment_ledger(self, record) -> None:
+        self._save("experiment_ledger", record.id, self._encode(record.as_dict()))
+
+    def get_experiment_ledger(self, record_id: str) -> dict | None:
+        row = self._connection.execute(
+            "SELECT payload FROM experiment_ledger WHERE id = ?", (record_id,)
+        ).fetchone()
+        return None if row is None else json.loads(row[0])
+
+    def list_experiment_ledger(self) -> tuple[dict, ...]:
+        rows = self._connection.execute(
+            "SELECT payload FROM experiment_ledger ORDER BY id"
+        ).fetchall()
+        return tuple(json.loads(row[0]) for row in rows)
+
     def close(self) -> None:
         self._connection.close()
 
