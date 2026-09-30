@@ -94,3 +94,52 @@ def test_recursive_convergence_rejects_insufficient_quorum():
             memory_resource=memory,
             compute_resource=compute,
         )
+
+
+def test_recursive_convergence_feeds_adaptive_budget_into_next_cycle():
+    population, initial, memory, compute = _build()
+
+    result = run_recursive_convergence(
+        population=population,
+        initial_state=initial,
+        proposal_builder=lambda index, state, previous: (
+            "seed" if previous is None else f"improve from {previous.result.memory.id}"
+        ),
+        executor=lambda proposal: "ok",
+        quorum=2,
+        new_singularity_builder=lambda index, proposal: f"feedback:{index}:{proposal.id}",
+        created_at=(
+            "2026-09-30T00:00:01Z",
+            "2026-09-30T00:00:02Z",
+            "2026-09-30T00:00:03Z",
+        ),
+        memory_resource=memory,
+        compute_resource=compute,
+        utility_builder=lambda index, previous: float(index),
+        adaptive_memory_capacity=100.0,
+        adaptive_compute_capacity=100.0,
+    )
+
+    learning = result.learning_metrics
+    assert learning[1].verified_improvement is True
+
+    # The third cycle must consume the cumulative F10.3 allocation, where
+    # verified improvement increases cycle 2's share above cycle 1's share.
+    expected = result.adaptive_resource_allocation(100.0, 100.0)
+    cycle2_share = dict(expected.memory_by_cycle)[2]
+    assert cycle2_share > 50.0
+
+    expected_memory = __import__("src.resource_state", fromlist=["create_resource_state"]).create_resource_state(
+        cycle2_share,
+        0.0,
+        "2026-09-30T00:00:02Z:F10.3:memory",
+    )
+    expected_compute = __import__("src.resource_state", fromlist=["create_resource_state"]).create_resource_state(
+        dict(expected.compute_by_cycle)[2],
+        0.0,
+        "2026-09-30T00:00:02Z:F10.3:compute",
+    )
+
+    assert result.cycles[2].result.execution.memory_before_id == expected_memory.id
+    assert result.cycles[2].result.execution.compute_before_id == expected_compute.id
+    assert result.cycles[2].result.execution.memory_before_id != result.cycles[1].result.memory_resource.id
