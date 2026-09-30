@@ -47,6 +47,7 @@ from src.contribution_ledger import ContributionLedger
 from src.execution_ledger import ExecutionRecord
 from src.execution_audit import ExecutionAudit, create_execution_audit
 from src.resource_state import ResourceState
+from src.recursive_convergence import RecursiveConvergenceRun, run_recursive_convergence
 from src.omega_credit_self_organizing_commitment import (
     commit_ledger_backed_allocation_with_record,
     commit_self_organizing_allocation,
@@ -346,4 +347,32 @@ def run_collective_computation_mvp(
         executor=executor,
         utility=utility,
         prior_commits=() if prior_commits is None else prior_commits,
+    )
+
+
+def run_recursive_convergence_mvp(
+    *,
+    population: GenesisPopulation,
+    initial_state: AgentState,
+    proposal_builder,
+    executor,
+    quorum: int,
+    new_singularity_builder,
+    created_at: tuple[str, ...],
+    memory_resource: ResourceState,
+    compute_resource: ResourceState,
+    utility: float = 1.0,
+) -> RecursiveConvergenceRun:
+    """Expose the multi-cycle Agent Ω convergence runtime."""
+    return run_recursive_convergence(
+        population=population,
+        initial_state=initial_state,
+        proposal_builder=proposal_builder,
+        executor=executor,
+        quorum=quorum,
+        new_singularity_builder=new_singularity_builder,
+        created_at=created_at,
+        memory_resource=memory_resource,
+        compute_resource=compute_resource,
+        utility=utility,
     )
