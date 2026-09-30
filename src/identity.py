@@ -192,6 +192,7 @@ class IdentityVault:
         message: str | bytes,
         signature: Signature,
     ) -> bool:
+        payload = _message_bytes(message)
         if signature.did != identity.did:
             return False
         try:
@@ -200,7 +201,7 @@ class IdentityVault:
             )
             public_key.verify(
                 _unb64(signature.signature),
-                _message_bytes(message),
+                payload,
             )
         except (InvalidSignature, ValueError):
             return False
