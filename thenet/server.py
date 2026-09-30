@@ -243,6 +243,36 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             utility_builder=lambda index, previous: min(float(index) / 2.0, 1.0),
         )
 
+    def _control_counterfactual(self, payload: dict[str, Any]) -> dict[str, Any]:
+        cycle_index = payload.get("cycle_index")
+        if isinstance(cycle_index, bool) or not isinstance(cycle_index, int):
+            raise ValueError("cycle_index must be an integer")
+        proposal_text = self._required_string(payload, "proposal_text")
+        baseline = self._control_run()
+        spec = CounterfactualSpec(cycle_index=cycle_index, proposal_text=proposal_text)
+        counterfactual, comparison = run_counterfactual(
+            baseline=baseline,
+            spec=spec,
+            runner=lambda overrides: self._control_run(overrides),
+        )
+        result = comparison.as_dict()
+        return result
+
+    def _control_causal_trace(self, payload: dict[str, Any]) -> dict[str, Any]:
+        cycle_index = payload.get("cycle_index")
+        if isinstance(cycle_index, bool) or not isinstance(cycle_index, int):
+            raise ValueError("cycle_index must be an integer")
+        proposal_text = self._required_string(payload, "proposal_text")
+        baseline = self._control_run()
+        spec = CounterfactualSpec(cycle_index=cycle_index, proposal_text=proposal_text)
+        counterfactual, comparison = run_counterfactual(
+            baseline=baseline,
+            spec=spec,
+            runner=lambda overrides: self._control_run(overrides),
+        )
+        trace = build_causal_trace(comparison, baseline, counterfactual)
+        return {"comparison": comparison.as_dict(), "trace": trace.as_dict()}
+
     def _control_state_diff(self, payload: dict[str, Any]) -> dict[str, Any]:
         cycle_index = payload.get("cycle_index")
         if isinstance(cycle_index, bool) or not isinstance(cycle_index, int):
