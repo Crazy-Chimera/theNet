@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Any, Callable
 
 from src.genesis_network_bootstrap import GenesisNetworkBootstrap, bootstrap_three_agent_network
@@ -51,14 +50,17 @@ def run_network_lifecycle_mvp(
     created_at: str,
     proposal_text: str,
     executor: Callable[[Proposal], str] | None = None,
+    bootstrap: GenesisNetworkBootstrap | None = None,
+    runtime: NetworkRuntime | None = None,
 ) -> NetworkLifecycleResult:
-    boot: GenesisNetworkBootstrap = bootstrap_three_agent_network(
+    boot = bootstrap or bootstrap_three_agent_network(
         vault_path=vault_path,
         password=password,
         created_at=created_at,
         proposal_text=proposal_text,
     )
-    runtime = NetworkRuntime(database, boot.network, created_at=created_at)
+    live_runtime = runtime or NetworkRuntime(database, boot.network, created_at=created_at)
+    runtime = live_runtime
 
     phases: list[str] = ["GENESIS", "ADMISSION"]
     for item in boot.agents:
@@ -138,4 +140,47 @@ def run_network_lifecycle_mvp(
     )
 
 
-__all__ = ["NetworkLifecycleResult", "run_network_lifecycle_mvp"]
+class NetworkLifecycleService:
+    """Process-persistent F12 runtime boundary for theNet 3.0 MVP."""
+
+    def __init__(self, *, database: str | Path, vault_path: str | Path, password: str, created_at: str, proposal_text: str):
+        self.database = str(database)
+        self.vault_path = str(vault_path)
+        self.password = password
+        self.created_at = created_at
+        self.bootstrap = bootstrap_three_agent_network(
+            vault_path=vault_path,
+            password=password,
+            created_at=created_at,
+            proposal_text=proposal_text,
+        )
+        self.runtime = NetworkRuntime(database, self.bootstrap.network, created_at=created_at)
+        for item in self.bootstrap.agents:
+            self.runtime.add_agent(item.admission.membership, item.agent)
+        for handshake in self.bootstrap.handshakes:
+            try:
+                self.runtime.register_handshake(handshake, created_at=created_at)
+            except ValueError as exc:
+                if "replay" not in str(exc):
+                    raise
+
+    def run(self, *, created_at: str, proposal_text: str, executor: Callable[[Proposal], str] | None = None) -> NetworkLifecycleResult:
+        return run_network_lifecycle_mvp(
+            database=self.database,
+            vault_path=self.vault_path,
+            password=self.password,
+            created_at=created_at,
+            proposal_text=proposal_text,
+            executor=executor,
+            bootstrap=self.bootstrap,
+            runtime=self.runtime,
+        )
+
+    def remove_agent(self, agent_id: str) -> None:
+        self.runtime.remove_agent(agent_id)
+
+    def snapshot(self, *, created_at: str) -> MembershipSnapshot:
+        return self.runtime.snapshot(created_at=created_at)
+
+
+__all__ = ["NetworkLifecycleResult", "NetworkLifecycleService", "run_network_lifecycle_mvp"]
