@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from hashlib import sha256
 import json
+import math
 
 from src.omega_credit import OmegaCredit
 
@@ -66,7 +67,7 @@ def spend_omega_credit(
         raise TypeError("account must be OmegaCreditAccount")
     if isinstance(amount, bool) or not isinstance(amount, (int, float)):
         raise ValueError("amount must be positive and finite")
-    if amount <= 0.0:
+    if not math.isfinite(float(amount)) or amount <= 0.0:
         raise ValueError("amount must be positive")
     if amount > account.balance:
         raise ValueError("insufficient credit")
