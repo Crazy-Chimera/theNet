@@ -72,17 +72,13 @@ def measure_recursive_learning(
             prior = previous.result
             non_regression = (
                 current.outcome.utility >= prior.outcome.utility
-                and current.credit.credit >= prior.credit.credit
-                and current.credit.resource_efficiency >= prior.credit.resource_efficiency
-                and current.metrics.k >= prior.metrics.k
+                                and current.metrics.k >= prior.metrics.k
                 and current.metrics.c <= prior.metrics.c
                 and current.metrics.phi >= prior.metrics.phi
             )
             strict_gain = (
                 current.outcome.utility > prior.outcome.utility
-                or current.credit.credit > prior.credit.credit
-                or current.credit.resource_efficiency > prior.credit.resource_efficiency
-                or current.metrics.k > prior.metrics.k
+                                or current.metrics.k > prior.metrics.k
                 or current.metrics.c < prior.metrics.c
                 or current.metrics.phi > prior.metrics.phi
             )
