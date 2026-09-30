@@ -1,4 +1,4 @@
-# theNet MVP 0.2
+# theNet MVP 0.1
 
 The Theory of Collective Computation begins with a different premise: the universe is not a program running on a fixed machine.
 
