@@ -63,8 +63,11 @@ def run_network_lifecycle_mvp(
     runtime = live_runtime
 
     phases: list[str] = ["GENESIS", "ADMISSION"]
-    for item in boot.agents:
-        runtime.add_agent(item.admission.membership, item.agent)
+    # A supplied live runtime already owns membership state. Do not silently
+    # re-add agents that were deliberately removed between computations.
+    if not runtime.active_members():
+        for item in boot.agents:
+            runtime.add_agent(item.admission.membership, item.agent)
 
     phases.append("MEMBERSHIP")
     peers = {
@@ -180,8 +183,19 @@ class NetworkLifecycleService:
             runtime=self.runtime,
         )
 
+    def add_agent(self, agent_id: str) -> None:
+        known = {item.agent.agent_id: item for item in self.bootstrap.agents}
+        item = known.get(agent_id)
+        if item is None:
+            raise KeyError(f"unknown bootstrap agent: {agent_id}")
+        self.runtime.add_agent(item.admission.membership, item.agent)
+
     def remove_agent(self, agent_id: str) -> None:
         self.runtime.remove_agent(agent_id)
+
+    def heartbeat(self, session_id: str, *, seen_at: str) -> dict[str, Any]:
+        session = self.runtime.heartbeat(session_id, seen_at=seen_at)
+        return asdict(session)
 
     def snapshot(self, *, created_at: str) -> MembershipSnapshot:
         return self.runtime.snapshot(created_at=created_at)
