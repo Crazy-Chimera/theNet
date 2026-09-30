@@ -185,7 +185,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             compute_resource=compute,
             adaptive_memory_capacity=100.0,
             adaptive_compute_capacity=100.0,
-            utility=1.0,
+            utility_builder=lambda index, previous: min(float(index) / 2.0, 1.0),
         )
         learning = run.learning_metrics
         allocation = run.adaptive_resource_allocation(100.0, 100.0)
