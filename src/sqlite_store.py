@@ -30,7 +30,7 @@ class SQLiteStore:
                 id TEXT PRIMARY KEY,
                 payload TEXT NOT NULL
             );
-            """
+\n            CREATE TABLE IF NOT EXISTS experiment_ledger (\n                id TEXT PRIMARY KEY,\n                payload TEXT NOT NULL\n            );\n\n            """
         )
         self._connection.commit()
 
