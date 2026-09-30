@@ -16,6 +16,7 @@ from src.proposal import Proposal, create_proposal
 from src.resource_state import ResourceState
 from src.verification import create_verification
 from src.recursive_learning_metrics import RecursiveLearningMetrics, measure_recursive_learning
+from src.adaptive_resource_allocation import AdaptiveResourceAllocation, create_adaptive_resource_allocation
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,20 @@ class RecursiveConvergenceRun:
     @property
     def learning_metrics(self) -> tuple[RecursiveLearningMetrics, ...]:
         return measure_recursive_learning(self.cycles)
+
+    def adaptive_resource_allocation(
+        self,
+        memory_capacity: float,
+        compute_capacity: float,
+        *,
+        improvement_bonus: float = 0.25,
+    ) -> AdaptiveResourceAllocation:
+        return create_adaptive_resource_allocation(
+            self.learning_metrics,
+            memory_capacity,
+            compute_capacity,
+            improvement_bonus=improvement_bonus,
+        )
 
 
 ProposalBuilder = Callable[
