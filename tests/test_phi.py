@@ -10,7 +10,7 @@ from src.phi import (
     create_phi_from_observation,
     create_phi_structure,
 )
-from src.state import observe
+from src.state import create_state, observe
 from src.user_flow import add_relation, start_user_flow
 
 
@@ -86,7 +86,7 @@ def test_observation_materializes_exact_phi_structure():
     relation = make_relation("agent-a", "agent-b")
     flow = add_relation(flow, relation)
     observation = observe(
-        __import__("src.state", fromlist=["create_state"]).create_state(flow)
+        create_state(flow)
     )
 
     state = create_phi_from_observation(observation, [relation])
