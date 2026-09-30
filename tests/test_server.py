@@ -81,3 +81,26 @@ def test_runtime_port_defaults(monkeypatch):
 def test_runtime_port_accepts_valid_value(monkeypatch):
     monkeypatch.setenv("PORT", "8080")
     assert runtime_port() == 8080
+
+def test_control_room_demo_exposes_recursive_f10_feedback():
+    server, thread = start_server()
+    try:
+        request = Request(
+            f"http://127.0.0.1:{server.server_port}/v1/control/demo",
+            data=b"{}",
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(request) as response:
+            payload = json.load(response)
+            assert response.status == 200
+            assert payload["cycle_count"] == 3
+            assert payload["all_converged"] is True
+            assert payload["state_versions"] == [2, 3, 4]
+            assert payload["cycles"][1]["learning"]["memory_dependency"] is True
+            assert payload["cycles"][1]["learning"]["verified_improvement"] is True
+            assert payload["allocation"]["improvement_bonus"] == 0.25
+            assert payload["allocation"]["memory_by_cycle"][1][1] > 50.0
+    finally:
+        stop_server(server, thread)
+
