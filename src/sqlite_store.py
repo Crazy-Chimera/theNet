@@ -144,6 +144,19 @@ class SQLiteStore:
         ).fetchall()
         return tuple(json.loads(row[0]) for row in rows)
 
+    def save_memory(self, memory) -> None:
+        self._save("memories", memory.id, self._encode({
+            "id": memory.id, "subject_id": memory.subject_id,
+            "source_id": memory.source_id, "kind": memory.kind,
+            "created_at": memory.created_at, "version": memory.version,
+        }))
+
+    def get_memory(self, memory_id: str) -> dict | None:
+        row = self._connection.execute(
+            "SELECT payload FROM memories WHERE id = ?", (memory_id,)
+        ).fetchone()
+        return None if row is None else json.loads(row[0])
+
     def close(self) -> None:
         self._connection.close()
 
