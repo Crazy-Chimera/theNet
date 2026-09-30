@@ -1,63 +1,70 @@
-# State Contract
+# State / Observe Contract
 
 ## Purpose
 
-State is the local, immutable snapshot produced from a UserFlow after Relation.
-It represents what the local agent currently holds as state without introducing
-distributed consensus, persistence, or external infrastructure.
+State is the local immutable snapshot derived directly from an existing
+UserFlow. Observe reads that snapshot without changing it.
 
-## Input
+The intended local path is:
 
-A UserFlow is represented by:
+UserFlow → State → Observe
 
-- `flow_id`: non-empty string
-- `subject_id`: non-empty string
-- `events`: ordered tuple of non-empty string event identifiers
+No distributed infrastructure is required.
 
-## Output
+## State
 
-An immutable State:
+### Input
 
-- `id`
-- `flow_id`
-- `subject_id`
-- `events`
-- `version = 1`
+An existing immutable UserFlow.
 
-And a pure observation:
+### Output
 
-- `state_id`
-- `flow_id`
-- `subject_id`
-- `event_count`
-- `events`
-- `version`
+Immutable State containing:
 
-## Identity
+- id
+- flow_id
+- context_id
+- subject_id
+- stage
+- ordered relation_ids
+- version=1
 
-State identity is SHA-256 over the canonical representation of all
-state-defining fields. Equal UserFlow input MUST produce equal State identity.
+The State identity is SHA-256 over the complete state-defining projection of
+the UserFlow.
+
+## Observation
+
+Observe returns an immutable Observation containing the state identity and a
+small descriptive projection:
+
+- state_id
+- flow_id
+- subject_id
+- stage
+- relation_count
+- relation_ids
+- version=1
+
+Observation is read-only and deterministic.
 
 ## Invariants
 
-1. `flow_id` and `subject_id` must be non-empty strings.
-2. Events must be an ordered immutable sequence.
-3. Empty events are allowed: a flow can exist before its first event.
-4. State is immutable after creation.
-5. Event order is significant.
-6. Different state-defining input produces a different state identity.
-7. Observation does not mutate State.
-8. Observation is deterministic for the same State.
-9. No network, database, consensus, clock, or external service is required.
-10. State does not imply truth, verification, contribution, convergence, or meaning.
+1. State accepts only UserFlow.
+2. State does not mutate the UserFlow or its RequestContext.
+3. Relation order is preserved.
+4. Equal UserFlow input produces equal State identity.
+5. Different flow state produces a different State identity.
+6. Observe does not mutate State.
+7. Observe is deterministic for the same State.
+8. No network, database, consensus, clock, or external service is required.
+9. State does not claim that a relation is true, trusted, verified, meaningful,
+   globally agreed, or convergent.
 
 ## Boundary
 
-`UserFlow → State → Observe`
+UserFlow owns local request evolution.
+State materializes the current flow as a stable snapshot.
+Observe reads that snapshot.
 
-- UserFlow supplies local ordered experience.
-- State materializes that experience as a stable snapshot.
-- Observe reads the snapshot without changing it.
-
-Later layers may interpret, verify, converge, remember, or commit the
-observation. They must not be smuggled into State itself.
+Later layers may interpret, propose, verify, converge, remember, or express
+the observation without changing these primitives.
