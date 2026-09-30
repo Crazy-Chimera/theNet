@@ -50,6 +50,37 @@ async function loadState() {
 }
 
 
+
+function renderAudit(cycle) {
+  const target = $("audit-detail");
+  const audit = cycle.audit;
+  if (!audit) {
+    target.className = "audit-detail empty-state";
+    target.textContent = "No audit record returned for this cycle.";
+    return;
+  }
+  target.className = "audit-detail";
+  const rows = [
+    ["Proposal", cycle.proposal_id],
+    ["Verification", audit.verification_ids.join(", ")],
+    ["Consensus", audit.consensus_id],
+    ["Convergence", audit.convergence_id],
+    ["Execution", audit.execution_id],
+    ["Commit", audit.commit_id],
+    ["Relational Utility", audit.utility_id],
+    ["Ω-Credit", audit.credit_id],
+    ["Memory", audit.memory_id],
+    ["Memory before → after", audit.memory_before_id + " → " + audit.memory_after_id],
+    ["Compute before → after", audit.compute_before_id + " → " + audit.compute_after_id],
+    ["Next state", audit.state_id]
+  ];
+  target.innerHTML = '<div class="panel-heading"><div><p class="eyebrow">AUDIT</p><h3>Cycle ' +
+    cycle.index + ' evidence chain</h3></div><span class="tag tag-ok">IMMUTABLE IDS</span></div>' +
+    '<div class="audit-chain">' + rows.map(function(row) {
+      return '<div><small>' + text(row[0]) + '</small><code>' + text(row[1]) + '</code></div>';
+    }).join("") + '</div>';
+}
+
 function formatNumber(value, digits = 2) {
   return Number(value).toFixed(digits);
 }
@@ -91,7 +122,7 @@ function renderControl() {
 
   cycles.className = "cycle-list";
   cycles.innerHTML = control.cycles.map(function(cycle) {
-    return '<div class="cycle-card"><div class="cycle-head"><strong>Cycle ' + cycle.index +
+    return '<button class="cycle-card cycle-select" data-cycle="' + cycle.index + '"><div class="cycle-head"><strong>Cycle ' + cycle.index +
       '</strong><span class="tag ' + (cycle.learning.verified_improvement ? "tag-ok" : "") + '">' +
       (cycle.learning.verified_improvement ? "VERIFIED IMPROVEMENT" : (cycle.metrics.converged ? "CONVERGED" : "CHECK")) +
       '</span></div><div class="cycle-grid">' +
@@ -101,8 +132,17 @@ function renderControl() {
       '<div><small>Outcome / utility</small><strong>' + formatNumber(cycle.utility) + '</strong><code>' +
       text(cycle.outcome_id) + '</code></div>' +
       '<div><small>Ω-Credit</small><strong>' + formatNumber(cycle.omega_credit) + '</strong><code>state v' +
-      control.state_versions[cycle.index - 1] + '</code></div></div></div>';
+      control.state_versions[cycle.index - 1] + '</code></div></div></div></button>';
   }).join("");
+  document.querySelectorAll(".cycle-select").forEach(function(button) {
+    button.addEventListener("click", function() {
+      const cycle = control.cycles.find(function(item) {
+        return item.index === Number(button.dataset.cycle);
+      });
+      if (cycle) renderAudit(cycle);
+    });
+  });
+  renderAudit(control.cycles[control.cycles.length - 1]);
 }
 
 async function runControlDemo() {
