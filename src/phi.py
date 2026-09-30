@@ -27,7 +27,11 @@ def create_phi_from_observation(
         raise TypeError("relations must contain only Relation objects")
 
     expected = tuple(sorted(observation.relation_ids))
-    actual = tuple(sorted({relation.id for relation in items}))
+    actual_ids = tuple(relation.id for relation in items)
+    actual = tuple(sorted(actual_ids))
+
+    if len(actual_ids) != len(set(actual_ids)):
+        raise ValueError("relations must not contain duplicate relation IDs")
 
     if expected != actual:
         raise ValueError(
