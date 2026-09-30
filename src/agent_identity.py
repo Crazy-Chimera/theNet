@@ -13,6 +13,11 @@ class AgentIdentity:
     network_genesis_id: str | None = None
     version: int = 1
 
+    @property
+    def agent_identity_id(self) -> str:
+        """Backward-compatible F11 identifier alias for the Agent id."""
+        return self.agent_id
+
 def create_agent_identity(genesis_record: GenesisRecord, identity: Identity) -> AgentIdentity:
     if not isinstance(genesis_record, GenesisRecord): raise TypeError("genesis_record must be GenesisRecord")
     if not isinstance(identity, Identity): raise TypeError("identity must be Identity")
