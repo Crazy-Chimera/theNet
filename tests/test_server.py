@@ -83,6 +83,29 @@ def test_runtime_port_accepts_valid_value(monkeypatch):
     assert runtime_port() == 8080
 
 
+def test_control_room_replay_is_deterministic():
+    server, thread = start_server()
+    try:
+        request = Request(
+            f"http://127.0.0.1:{server.server_port}/v1/control/replay",
+            data=b"{}",
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(request) as response:
+            payload = json.load(response)
+            assert response.status == 200
+            assert payload["deterministic"] is True
+            assert payload["graph_match"] is True
+            assert payload["run_match"] is True
+            assert payload["artifact_match"] is True
+            assert payload["original_cycles"] == 3
+            assert payload["replay_cycles"] == 3
+            assert payload["original_graph_id"] == payload["replay_graph_id"]
+    finally:
+        stop_server(server, thread)
+
+
 def test_control_room_query_traces_evidence_path():
     server, thread = start_server()
     try:
