@@ -16,6 +16,7 @@ from src.genesis import create_genesis
 from src.genesis_population import create_genesis_population
 from src.resource_state import create_resource_state
 from src.evidence_graph import build_evidence_graph
+from src.evidence_query import query_evidence_graph, trace_evidence_path
 from src.postgres_store import PostgresStore
 from src.relation import create_relation
 from src.sqlite_store import SQLiteStore
@@ -84,6 +85,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             "/v1/relations": self._create_relation,
             "/v1/closure": self._build_closure,
             "/v1/control/demo": self._control_demo,
+            "/v1/control/query": self._control_query,
         }
         path = urlparse(self.path).path
         handler = routes.get(path)
@@ -252,6 +254,46 @@ class RuntimeHandler(BaseHTTPRequestHandler):
                 "compute_id": run.final_compute_resource.id,
             },
         }
+
+    def _control_query(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Query the deterministic Evidence Graph produced by the Control Room demo."""
+        graph = build_evidence_graph(
+            run_recursive_convergence_mvp(
+                population=create_genesis_population(3, "2026-09-30T00:00:00Z"),
+                initial_state=create_genesis_population(3, "2026-09-30T00:00:00Z").agents[0],
+                proposal_builder=lambda index, state, previous: (
+                    "observe initial state"
+                    if previous is None
+                    else f"refine from memory {previous.result.memory.id}"
+                ),
+                executor=lambda proposal: f"executed:{proposal.proposal}",
+                quorum=2,
+                new_singularity_builder=lambda index, proposal: f"control-query:{index}:{proposal.id}",
+                created_at=("2026-09-30T00:00:01Z", "2026-09-30T00:00:02Z", "2026-09-30T00:00:03Z"),
+                memory_resource=create_resource_state(100.0, 0.0, "2026-09-30T00:00:00Z"),
+                compute_resource=create_resource_state(100.0, 0.0, "2026-09-30T00:00:00Z"),
+                utility_builder=lambda index, previous: min(float(index) / 2.0, 1.0),
+            )
+        )
+        operation = payload.get("operation", "query")
+        if operation == "path":
+            result = trace_evidence_path(
+                graph,
+                self._required_string(payload, "source_id"),
+                self._required_string(payload, "target_id"),
+                direction=payload.get("direction", "both"),
+                max_depth=int(payload.get("max_depth", 16)),
+            )
+        else:
+            result = query_evidence_graph(
+                graph,
+                self._required_string(payload, "node_id"),
+                direction=payload.get("direction", "both"),
+                max_depth=int(payload.get("max_depth", 1)),
+                relation=payload.get("relation"),
+                node_type=payload.get("node_type"),
+            )
+        return {"graph_id": graph.id, "query": result.as_dict()}
 
     def _state_snapshot(self) -> dict[str, Any]:
         with _STATE_LOCK:
