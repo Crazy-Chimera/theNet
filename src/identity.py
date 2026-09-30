@@ -58,7 +58,10 @@ def verify_signature(identity: Identity, message: str | bytes, signature: Signat
     if signature.did != identity.did:
         return False
     try:
-        public_key = Ed25519PublicKey.from_public_bytes(_unb64(identity.public_key))
+        public_bytes = _unb64(identity.public_key)
+        if identity.did != _did(public_bytes):
+            return False
+        public_key = Ed25519PublicKey.from_public_bytes(public_bytes)
         public_key.verify(_unb64(signature.signature), payload)
     except (InvalidSignature, ValueError):
         return False
