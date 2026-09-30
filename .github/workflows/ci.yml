@@ -41,3 +41,5 @@ jobs:
         env:
           PYTHONPATH: .
         run: python -m pytest -q
+      - name: Smoke test live Render health endpoint
+        run: curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors https://thenet-eew6.onrender.com/health
