@@ -258,6 +258,32 @@ def test_control_room_experiment_matrix_exposes_independent_cases():
 
 
 
+def test_control_room_reproducibility_returns_fingerprints():
+    server, thread = start_server()
+    try:
+        request = Request(
+            f"http://127.0.0.1:{server.server_port}/v1/control/reproducibility",
+            data=json.dumps({
+                "cases": [
+                    {"id": "a", "cycle_index": 2, "proposal_text": "alternative A"},
+                    {"id": "b", "cycle_index": 3, "proposal_text": "alternative B"},
+                ],
+            }).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(request) as response:
+            payload = json.load(response)
+            assert response.status == 200
+            fingerprint = payload["fingerprint"]
+            assert len(fingerprint["design_fingerprint"]) == 64
+            assert len(fingerprint["result_fingerprint"]) == 64
+            assert fingerprint["runtime_contract"] == "counterfactual-matrix-v1.7"
+    finally:
+        stop_server(server)
+
+
+
 def test_control_room_query_traces_evidence_path():
     server, thread = start_server()
     try:
