@@ -3,7 +3,10 @@ const state = {
   relations: [],
   closures: [],
   events: [],
-  control: null
+  control: null,
+  evidenceGraph: null,
+  replay: null,
+  query: null
 };
 
 const $ = (id) => document.getElementById(id);
@@ -85,6 +88,103 @@ function formatNumber(value, digits = 2) {
   return Number(value).toFixed(digits);
 }
 
+function renderQueryOptions() {
+  const graph = state.evidenceGraph;
+  if (!graph) return;
+  const nodeSelect = $("query-node");
+  const relationSelect = $("query-relation");
+  const typeSelect = $("query-node-type");
+  nodeSelect.innerHTML = graph.nodes.map(function(node) {
+    return '<option value="' + text(node.id) + '">' + text(node.type + " · " + node.label) + '</option>';
+  }).join("");
+  relationSelect.innerHTML = '<option value="">Any relation</option>' +
+    Array.from(new Set(graph.edges.map(function(edge) { return edge.relation; }))).sort().map(function(relation) {
+      return '<option value="' + text(relation) + '">' + text(relation) + '</option>';
+    }).join("");
+  typeSelect.innerHTML = '<option value="">Any type</option>' +
+    Array.from(new Set(graph.nodes.map(function(node) { return node.type; }))).sort().map(function(type) {
+      return '<option value="' + text(type) + '">' + text(type) + '</option>';
+    }).join("");
+}
+
+function renderQueryResult(result) {
+  const target = $("query-result");
+  if (!result) {
+    target.className = "query-result empty-state";
+    target.textContent = "No query executed.";
+    return;
+  }
+  target.className = "query-result";
+  target.innerHTML =
+    '<div class="query-summary"><strong>' + text(result.node_id) + '</strong><span>' +
+    text(result.direction) + ' · depth ' + text(result.depth) + ' · ' + result.nodes.length + ' nodes · ' +
+    result.edges.length + ' edges</span></div>' +
+    '<div class="query-edges">' +
+    result.edges.map(function(edge) {
+      return '<div><span>' + text(edge.relation) + '</span><code>' + text(edge.source) +
+        '</code><b>→</b><code>' + text(edge.target) + '</code></div>';
+    }).join("") +
+    '</div>';
+}
+
+async function runGraphQuery() {
+  const nodeId = $("query-node").value;
+  if (!nodeId) return;
+  const button = $("run-graph-query");
+  button.disabled = true;
+  button.textContent = "Querying…";
+  try {
+    const result = await api("/v1/control/query", {
+      operation: "query",
+      node_id: nodeId,
+      direction: $("query-direction").value,
+      max_depth: Number($("query-depth").value),
+      relation: $("query-relation").value || null,
+      node_type: $("query-node-type").value || null
+    });
+    state.query = result.query;
+    renderQueryResult(state.query);
+  } catch (error) {
+    addEvent("ERROR", error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Run query";
+  }
+}
+
+async function runReplay() {
+  const button = $("run-replay");
+  const status = $("replay-status");
+  const result = $("replay-result");
+  button.disabled = true;
+  button.textContent = "Replaying…";
+  status.textContent = "RUNNING";
+  status.className = "tag";
+  try {
+    const data = await api("/v1/control/replay", {});
+    state.replay = data;
+    status.textContent = data.deterministic ? "DETERMINISTIC MATCH" : "MISMATCH";
+    status.className = "tag " + (data.deterministic ? "tag-ok" : "tag-warn");
+    result.className = "replay-result";
+    result.innerHTML =
+      '<div class="replay-grid">' +
+      '<div><small>Original graph</small><code>' + text(data.original_graph_id) + '</code></div>' +
+      '<div><small>Replay graph</small><code>' + text(data.replay_graph_id) + '</code></div>' +
+      '<div><small>Graph match</small><strong>' + (data.graph_match ? "✓" : "✕") + '</strong></div>' +
+      '<div><small>Run match</small><strong>' + (data.run_match ? "✓" : "✕") + '</strong></div>' +
+      '<div><small>Artifact match</small><strong>' + (data.artifact_match ? "✓" : "✕") + '</strong></div>' +
+      '<div><small>Cycles</small><strong>' + text(data.original_cycles) + " → " + text(data.replay_cycles) + '</strong></div>' +
+      '</div>';
+  } catch (error) {
+    status.textContent = "ERROR";
+    status.className = "tag tag-warn";
+    addEvent("ERROR", error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Replay 3-cycle experiment";
+  }
+}
+
 function renderControl() {
   const control = state.control;
   const metrics = $("f10-metrics");
@@ -94,6 +194,7 @@ function renderControl() {
 
   if (!control) return;
   state.evidenceGraph = control.evidence_graph || null;
+  renderQueryOptions();
 
   status.textContent = control.all_converged ? "CONVERGED" : "CHECK";
   status.className = "tag " + (control.all_converged ? "tag-ok" : "tag-warn");
@@ -391,6 +492,9 @@ function render() {
   renderControl();
   renderGraphs();
 }
+
+$("run-graph-query").addEventListener("click", runGraphQuery);
+$("run-replay").addEventListener("click", runReplay);
 
 $("genesis-created-at").value = nowInputValue();
 $("relation-created-at").value = nowInputValue();
