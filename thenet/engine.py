@@ -7,6 +7,15 @@ from dataclasses import dataclass
 from src.agent_state import AgentState, create_agent_state
 from src.collective_runtime import CollectiveComputationResult, run_collective_computation
 from src.network_collective_runtime import run_snapshot_collective_computation
+from src.network_coordination import (
+    CoordinationRecord,
+    WorkAnnouncement,
+    create_coordination_record,
+    create_work_announcement,
+    run_coordinated_snapshot_computation,
+    verify_coordination_record,
+    verify_work_announcement,
+)
 from src.network_runtime import MembershipSnapshot, NetworkRuntime
 from src.co_definition import RelationalCoDefinition, create_co_definition
 from src.collective_evolution import CollectiveEvolution, evolve_collectively
@@ -408,6 +417,67 @@ def run_snapshot_collective_computation_mvp(
         executor=executor,
         utility=utility,
         prior_commits=() if prior_commits is None else prior_commits,
+    )
+
+
+
+def announce_network_work(
+    snapshot: MembershipSnapshot,
+    proposal: Proposal,
+    *,
+    status: str = "proposed",
+) -> WorkAnnouncement:
+    """Create a snapshot-bound work announcement."""
+    return create_work_announcement(snapshot, proposal, status=status)
+
+
+def coordinate_snapshot_work(
+    snapshot: MembershipSnapshot,
+    proposal: Proposal,
+    verifications: list[Verification],
+) -> CoordinationRecord:
+    """Create an immutable coordination record from snapshot-scoped quorum."""
+    return create_coordination_record(snapshot, proposal, verifications)
+
+
+def verify_snapshot_coordination(
+    record: CoordinationRecord,
+    snapshot: MembershipSnapshot,
+    proposal: Proposal,
+) -> bool:
+    """Verify that coordination remains bound to the original snapshot and proposal."""
+    return verify_coordination_record(record, snapshot, proposal)
+
+
+def run_coordinated_snapshot_computation_mvp(
+    runtime: NetworkRuntime,
+    snapshot: MembershipSnapshot,
+    current_state: AgentState,
+    proposal: Proposal,
+    verifications: list[Verification],
+    created_at: str,
+    memory_resource: ResourceState,
+    compute_resource: ResourceState,
+    executor,
+    *,
+    utility: float = 1.0,
+    prior_commits: list[EvolutionCommit] | None = None,
+    require_current_snapshot: bool = True,
+) -> tuple[CoordinationRecord, CollectiveComputationResult]:
+    """Coordinate and execute one snapshot-scoped distributed computation."""
+    return run_coordinated_snapshot_computation(
+        runtime=runtime,
+        snapshot=snapshot,
+        current_state=current_state,
+        proposal=proposal,
+        verifications=verifications,
+        created_at=created_at,
+        memory_resource=memory_resource,
+        compute_resource=compute_resource,
+        executor=executor,
+        utility=utility,
+        prior_commits=() if prior_commits is None else prior_commits,
+        require_current_snapshot=require_current_snapshot,
     )
 
 
