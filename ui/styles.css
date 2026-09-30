@@ -966,3 +966,48 @@ button:disabled { opacity: .55; cursor: wait; }
   .trace-step b, .trace-step span:last-child { grid-column: 2; }
 }
 
+.state-diff-result {
+  margin-top: 12px;
+}
+
+.state-diff-list {
+  display: grid;
+  gap: 4px;
+  max-height: 520px;
+  overflow: auto;
+}
+
+.state-diff-row {
+  display: grid;
+  grid-template-columns: 28px 170px minmax(90px, 1fr) 14px minmax(90px, 1fr) 70px;
+  gap: 7px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: 10px;
+}
+
+.state-diff-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.state-diff-row code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .state-diff-row {
+    grid-template-columns: 28px 1fr;
+  }
+  .state-diff-row code,
+  .state-diff-row b,
+  .state-diff-row span:last-child {
+    grid-column: 2;
+  }
+}
+
