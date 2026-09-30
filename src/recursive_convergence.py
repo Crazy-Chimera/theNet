@@ -209,7 +209,7 @@ def run_recursive_convergence(
         if index < len(created_at):
             learning = measure_recursive_learning(tuple(cycles))
             allocation = create_adaptive_resource_allocation(
-                (learning[-1],),
+                learning,
                 feedback_memory_capacity,
                 feedback_compute_capacity,
                 improvement_bonus=improvement_bonus,
