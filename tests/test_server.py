@@ -205,6 +205,32 @@ def test_control_room_state_diff_exposes_metric_and_resource_changes():
 
 
 
+def test_control_room_impact_vector_exposes_branch_deltas():
+    server, thread = start_server()
+    try:
+        request = Request(
+            f"http://127.0.0.1:{server.server_port}/v1/control/impact-vector",
+            data=json.dumps({
+                "cycle_index": 2,
+                "proposal_text": "counterfactual hypothesis",
+            }).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(request) as response:
+            payload = json.load(response)
+            assert response.status == 200
+            impact = payload["impact_vector"]
+            assert impact["first_divergence_cycle"] == 2
+            assert len(impact["vectors"]) == 3
+            assert impact["vectors"][0]["changed_fields"] == 0
+            assert impact["vectors"][1]["changed_fields"] > 0
+            assert impact["vectors"][2]["changed_fields"] > 0
+    finally:
+        stop_server(server)
+
+
+
 def test_control_room_query_traces_evidence_path():
     server, thread = start_server()
     try:
