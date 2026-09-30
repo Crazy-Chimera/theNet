@@ -53,6 +53,7 @@ class NetworkRuntime:
             CREATE TABLE IF NOT EXISTS network_runtime_sessions (session_id TEXT PRIMARY KEY, network_id TEXT NOT NULL, initiator_id TEXT NOT NULL, responder_id TEXT NOT NULL, handshake_id TEXT NOT NULL UNIQUE, state TEXT NOT NULL, created_at TEXT NOT NULL, version INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS network_runtime_epochs (network_id TEXT PRIMARY KEY, epoch INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS network_runtime_snapshots (snapshot_id TEXT PRIMARY KEY, network_id TEXT NOT NULL, epoch INTEGER NOT NULL, members_json TEXT NOT NULL, quorum INTEGER NOT NULL, created_at TEXT NOT NULL, version INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS network_runtime_heartbeats (session_id TEXT PRIMARY KEY, network_id TEXT NOT NULL, seen_at TEXT NOT NULL, version INTEGER NOT NULL);
             """)
             db.execute("INSERT OR IGNORE INTO network_runtime_epochs VALUES (?,0)",(network.network_id,))
 
@@ -96,6 +97,19 @@ class NetworkRuntime:
         with self._connect() as db: db.execute("INSERT OR REPLACE INTO network_runtime_sessions VALUES (?,?,?,?,?,?,?,1)",(sid,self.network.network_id,handshake.initiator_id,handshake.responder_id,handshake.handshake_id,"established",created_at))
         return SessionState(sid,self.network.network_id,handshake.initiator_id,handshake.responder_id,handshake.handshake_id,"established",created_at)
 
+    def heartbeat(self, session_id: str, *, seen_at: str) -> SessionState:
+        with self._connect() as db:
+            row=db.execute("SELECT * FROM network_runtime_sessions WHERE session_id=? AND network_id=?",(session_id,self.network.network_id)).fetchone()
+            if row is None: raise KeyError(f"unknown session: {session_id}")
+            if row["state"] != "established": raise ValueError("session is not established")
+            db.execute("INSERT OR REPLACE INTO network_runtime_heartbeats VALUES (?,?,?,1)",(session_id,self.network.network_id,seen_at))
+        return SessionState(row["session_id"],row["network_id"],row["initiator_id"],row["responder_id"],row["handshake_id"],row["state"],seen_at,row["version"])
+
+    def last_heartbeat(self, session_id: str) -> str | None:
+        with self._connect() as db:
+            row=db.execute("SELECT seen_at FROM network_runtime_heartbeats WHERE session_id=? AND network_id=?",(session_id,self.network.network_id)).fetchone()
+        return None if row is None else row["seen_at"]
+
     def sessions(self)->tuple[SessionState,...]:
         with self._connect() as db: rows=db.execute("SELECT * FROM network_runtime_sessions WHERE network_id=? ORDER BY session_id",(self.network.network_id,)).fetchall()
         return tuple(SessionState(r["session_id"],r["network_id"],r["initiator_id"],r["responder_id"],r["handshake_id"],r["state"],r["created_at"],r["version"]) for r in rows)
@@ -115,6 +129,14 @@ class NetworkRuntime:
         members=tuple(_json.loads(r["members_json"])); expected=_hash({"created_at":r["created_at"],"epoch":r["epoch"],"members":members,"network_id":r["network_id"],"quorum":r["quorum"],"version":r["version"]})
         if expected!=r["snapshot_id"]: raise ValueError("membership snapshot integrity check failed")
         return MembershipSnapshot(r["snapshot_id"],r["network_id"],r["epoch"],members,r["quorum"],r["created_at"],r["version"])
+
+    def validate_snapshot_current(self, snapshot: MembershipSnapshot) -> None:
+        if self.get_snapshot(snapshot.snapshot_id) != snapshot:
+            raise ValueError("snapshot does not match persisted state")
+        with self._connect() as db:
+            row=db.execute("SELECT epoch FROM network_runtime_epochs WHERE network_id=?",(self.network.network_id,)).fetchone()
+        if int(row["epoch"]) != snapshot.epoch:
+            raise ValueError("snapshot is stale relative to live membership epoch")
 
     def validate_snapshot_verifiers(self,snapshot:MembershipSnapshot,proposer_id:str,verifier_ids:Iterable[str])->None:
         if snapshot.network_id!=self.network.network_id: raise ValueError("snapshot belongs to another network")
