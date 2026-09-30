@@ -48,6 +48,7 @@ from src.execution_ledger import ExecutionRecord
 from src.execution_audit import ExecutionAudit, create_execution_audit
 from src.resource_state import ResourceState
 from src.recursive_convergence import RecursiveConvergenceRun, run_recursive_convergence
+from src.adaptive_resource_allocation import AdaptiveResourceAllocation, create_adaptive_resource_allocation
 from src.omega_credit_self_organizing_commitment import (
     commit_ledger_backed_allocation_with_record,
     commit_self_organizing_allocation,
@@ -318,6 +319,22 @@ def find_execution_records_by_contribution_ledger(
 ) -> tuple[ExecutionRecord, ...]:
     """Retrieve all execution records linked to one contribution ledger."""
     return audit.find_records_by_contribution_ledger(contribution_ledger_id)
+
+
+def allocate_adaptive_resources(
+    learning_metrics,
+    memory_capacity: float,
+    compute_capacity: float,
+    *,
+    improvement_bonus: float = 0.25,
+) -> AdaptiveResourceAllocation:
+    """Allocate the next finite budget from verified recursive improvement."""
+    return create_adaptive_resource_allocation(
+        learning_metrics,
+        memory_capacity,
+        compute_capacity,
+        improvement_bonus=improvement_bonus,
+    )
 
 
 def run_collective_computation_mvp(
