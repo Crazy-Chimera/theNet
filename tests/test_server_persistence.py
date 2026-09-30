@@ -92,3 +92,32 @@ def test_http_runtime_persists_relation(tmp_path):
         assert any(item["id"] == identifier for item in state["relations"])
     finally:
         stop_server(server, thread)
+
+
+def test_persistence_probe_reopens_store(monkeypatch, tmp_path):
+    monkeypatch.setenv("THENET_PERSISTENCE_PROBE", "1")
+    monkeypatch.setenv("THENET_SQLITE_PATH", str(tmp_path / "probe.db"))
+    monkeypatch.delenv("THENET_POSTGRES_DSN", raising=False)
+
+    from thenet import server
+
+    server.run_persistence_probe()
+
+    store = SQLiteStore(tmp_path / "probe.db")
+    try:
+        source = next(
+            item for item in store.list_genesis()
+            if item.subject == "production-persistence-source"
+        )
+        target = next(
+            item for item in store.list_genesis()
+            if item.subject == "production-persistence-target"
+        )
+        relation = next(
+            item for item in store.list_relations()
+            if item.kind == "production-persistence"
+        )
+        assert relation.source_id == source.id
+        assert relation.target_id == target.id
+    finally:
+        store.close()
