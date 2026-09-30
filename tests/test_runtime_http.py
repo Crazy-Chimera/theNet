@@ -1,11 +1,9 @@
 import json
 import threading
 from http.client import HTTPConnection
-from http.server import ThreadingHTTPServer
-
 import pytest
 
-from thenet.server import RuntimeHandler, runtime_port
+from thenet.server import RuntimeHandler, ThreadingHTTPServer, runtime_port
 
 
 def start_server():
