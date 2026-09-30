@@ -247,6 +247,24 @@ function renderEvents() {
 }
 
 
+
+function inspectNode(type, id, meta = {}) {
+  const target = $("node-inspector");
+  target.className = "node-inspector";
+  const refs = Object.entries(meta.refs || {}).map(function(entry) {
+    return '<div><small>' + text(entry[0]) + '</small><code>' + text(entry[1]) + '</code></div>';
+  }).join("");
+  target.innerHTML =
+    '<div class="panel-heading"><div><p class="eyebrow">NODE INSPECTOR</p><h3>' +
+    text(type) + '</h3></div><span class="tag tag-ok">RUNTIME ID</span></div>' +
+    '<div class="inspector-grid">' +
+    '<div><small>ID</small><code>' + text(id) + '</code></div>' +
+    '<div><small>TYPE</small><strong>' + text(type) + '</strong></div>' +
+    '<div><small>LABEL</small><strong>' + text(meta.label || "—") + '</strong></div>' +
+    '</div>' +
+    (refs ? '<div class="inspector-refs">' + refs + '</div>' : '');
+}
+
 function renderGraphs() {
   const memory = $("memory-graph");
   const agents = $("agent-graph");
@@ -257,13 +275,13 @@ function renderGraphs() {
     memory.innerHTML = cycles.map(function(cycle, index) {
       const previous = index === 0 ? "GENESIS" : cycles[index - 1].audit.memory_id;
       return '<div class="graph-row">' +
-        '<span class="graph-node root"><small>PARENT MEMORY</small><code>' + text(previous) + '</code></span>' +
+        '<button type="button" class="graph-node graph-click root" data-inspect-type="PARENT MEMORY" data-inspect-id="' + text(previous) + '"><small>PARENT MEMORY</small><code>' + text(previous) + '</code></button>' +
         '<span class="graph-arrow">→</span>' +
-        '<span class="graph-node"><small>PROPOSAL · CYCLE ' + cycle.index + '</small><code>' + text(cycle.proposal_id) + '</code></span>' +
+        '<button type="button" class="graph-node graph-click" data-inspect-type="PROPOSAL" data-inspect-id="' + text(cycle.proposal_id) + '"><small>PROPOSAL · CYCLE ' + cycle.index + '</small><code>' + text(cycle.proposal_id) + '</code></button>' +
         '<span class="graph-arrow">→</span>' +
-        '<span class="graph-node"><small>OUTCOME → MEMORY</small><code>' + text(cycle.audit.memory_id) + '</code></span>' +
+        '<button type="button" class="graph-node graph-click" data-inspect-type="MEMORY" data-inspect-id="' + text(cycle.audit.memory_id) + '" data-inspect-label="cycle ' + cycle.index + '"><small>OUTCOME → MEMORY</small><code>' + text(cycle.audit.memory_id) + '</code></button>' +
         '<span class="graph-arrow">→</span>' +
-        '<span class="graph-node"><small>NEXT STATE</small><code>' + text(cycle.audit.state_id) + '</code></span>' +
+        '<button type="button" class="graph-node graph-click" data-inspect-type="NEXT STATE" data-inspect-id="' + text(cycle.audit.state_id) + '"><small>NEXT STATE</small><code>' + text(cycle.audit.state_id) + '</code></button>' +
         '</div>';
     }).join("");
   } else {
@@ -277,15 +295,24 @@ function renderGraphs() {
       const source = state.genesis.find(function(item) { return item.id === relation.source_id; });
       const target = state.genesis.find(function(item) { return item.id === relation.target_id; });
       return '<div class="graph-row">' +
-        '<span class="graph-node"><small>SOURCE</small><strong>' + text(source?.subject ?? relation.source_id) + '</strong><code>' + text(relation.source_id) + '</code></span>' +
+        '<button type="button" class="graph-node graph-click" data-inspect-type="AGENT" data-inspect-id="' + text(relation.source_id) + '" data-inspect-label="' + text(source?.subject ?? relation.source_id) + '"><small>SOURCE</small><strong>' + text(source?.subject ?? relation.source_id) + '</strong><code>' + text(relation.source_id) + '</code></button>' +
         '<span class="graph-arrow">→</span>' +
-        '<span class="graph-node"><small>' + text(relation.kind) + '</small><strong>' + text(target?.subject ?? relation.target_id) + '</strong><code>' + text(relation.target_id) + '</code></span>' +
+        '<button type="button" class="graph-node graph-click" data-inspect-type="AGENT" data-inspect-id="' + text(relation.target_id) + '" data-inspect-label="' + text(target?.subject ?? relation.target_id) + '"><small>' + text(relation.kind) + '</small><strong>' + text(target?.subject ?? relation.target_id) + '</strong><code>' + text(relation.target_id) + '</code></button>' +
         '</div>';
     }).join("");
   } else {
     agents.className = "evidence-graph empty-state";
     agents.textContent = "No runtime relations yet.";
   }
+
+  document.querySelectorAll(".graph-click").forEach(function(button) {
+    button.addEventListener("click", function() {
+      inspectNode(button.dataset.inspectType, button.dataset.inspectId, {
+        label: button.dataset.inspectLabel,
+        refs: { "selected_from": button.dataset.inspectType }
+      });
+    });
+  });
 }
 
 function render() {
