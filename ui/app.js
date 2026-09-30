@@ -257,12 +257,13 @@ function renderGraphs() {
     memory.innerHTML = cycles.map(function(cycle, index) {
       const previous = index === 0 ? "GENESIS" : cycles[index - 1].audit.memory_id;
       return '<div class="graph-row">' +
-        '<span class="graph-node root"><small>CYCLE ' + cycle.index + '</small><code>' + text(cycle.audit.memory_id) + '</code></span>' +
+        '<span class="graph-node root"><small>PARENT MEMORY</small><code>' + text(previous) + '</code></span>' +
         '<span class="graph-arrow">→</span>' +
-        '<span class="graph-node"><small>MEMORY</small><code>' + text(cycle.audit.memory_id) + '</code></span>' +
+        '<span class="graph-node"><small>PROPOSAL · CYCLE ' + cycle.index + '</small><code>' + text(cycle.proposal_id) + '</code></span>' +
+        '<span class="graph-arrow">→</span>' +
+        '<span class="graph-node"><small>OUTCOME → MEMORY</small><code>' + text(cycle.audit.memory_id) + '</code></span>' +
         '<span class="graph-arrow">→</span>' +
         '<span class="graph-node"><small>NEXT STATE</small><code>' + text(cycle.audit.state_id) + '</code></span>' +
-        (index === 0 ? '<span class="graph-origin">origin: ' + text(previous) + '</span>' : '') +
         '</div>';
     }).join("");
   } else {
