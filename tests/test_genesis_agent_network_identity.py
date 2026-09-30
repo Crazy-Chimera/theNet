@@ -9,13 +9,11 @@ from src.agent_identity import (
 )
 from src.genesis import create_genesis
 from src.genesis_record import (
-    GenesisRecord,
     create_genesis_record,
     verify_genesis_record,
 )
 from src.identity import IdentityVault
 from src.network_identity import (
-    NetworkIdentity,
     create_network_identity,
     verify_network_identity,
 )
@@ -79,14 +77,24 @@ def test_f11_agent_identity_binds_to_genesis(tmp_path):
     *_, record, agent, _, _ = _bootstrap(tmp_path)
     assert isinstance(agent, AgentIdentity)
     assert agent.genesis_id == record.genesis_id
-    assert verify_agent_identity(agent, record, IdentityVault(tmp_path / "vault.json").get(agent.identity_did))
+    assert verify_agent_identity(
+        agent,
+        record,
+        IdentityVault(tmp_path / "vault.json").get(agent.identity_did),
+    )
 
 
-def test_f11_agent_identity_rejects_wrong_genesis(tmp_path):
+def test_f11_agent_identity_rejects_wrong_identity(tmp_path):
     genesis, identity, resource, record, *_ = _bootstrap(tmp_path)
-    other = create_genesis("agent:other", genesis.created_at)
-    other_record = create_genesis_record(other, identity, record.initial_state_id, resource)
-    with pytest.raises(ValueError):
+    other_vault = IdentityVault(tmp_path / "other-vault.json")
+    other_identity = other_vault.create("other-password")
+    other_record = create_genesis_record(
+        genesis,
+        other_identity,
+        record.initial_state_id,
+        resource,
+    )
+    with pytest.raises(ValueError, match="identity does not match"):
         create_agent_identity(other_record, identity)
 
 
@@ -105,9 +113,9 @@ def test_f11_membership_binds_agent_and_network(tmp_path):
 
 
 def test_f11_membership_rejects_cross_genesis(tmp_path):
-    *_, record, agent, network, _ = _bootstrap(tmp_path)
+    *_, agent, _, _, membership = _bootstrap(tmp_path)
     other_network = create_network_identity("different-genesis")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Genesis"):
         create_network_membership(other_network, agent)
 
 

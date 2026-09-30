@@ -23,6 +23,36 @@ class ExperimentLedgerRecord:
         return asdict(self)
 
 
+def compute_experiment_ledger_id(
+    *,
+    run_id: str,
+    fingerprint: ExperimentFingerprint,
+    matrix: CounterfactualExperimentMatrix,
+    created_at: str,
+    version: int = 2,
+) -> str:
+    if not isinstance(run_id, str) or not run_id.strip():
+        raise ValueError("run_id must be non-empty")
+    if not isinstance(fingerprint, ExperimentFingerprint):
+        raise TypeError("fingerprint must be ExperimentFingerprint")
+    if not isinstance(matrix, CounterfactualExperimentMatrix):
+        raise TypeError("matrix must be CounterfactualExperimentMatrix")
+    if not isinstance(created_at, str) or not created_at.strip():
+        raise ValueError("created_at must be non-empty")
+    if version != 2:
+        raise ValueError("unsupported ledger version")
+
+    payload = {
+        "created_at": created_at,
+        "fingerprint": fingerprint.as_dict(),
+        "matrix": matrix.as_dict(),
+        "run_id": run_id,
+        "version": version,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def create_experiment_ledger_record(
     *,
     matrix: CounterfactualExperimentMatrix,
@@ -41,15 +71,12 @@ def create_experiment_ledger_record(
     if not isinstance(created_at, str) or not created_at.strip():
         raise ValueError("created_at must be non-empty")
 
-    payload = {
-        "created_at": created_at,
-        "fingerprint": fingerprint.as_dict(),
-        "matrix": matrix.as_dict(),
-        "run_id": run_id,
-        "version": 2,
-    }
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    identifier = sha256(canonical.encode("utf-8")).hexdigest()
+    identifier = compute_experiment_ledger_id(
+        run_id=run_id,
+        fingerprint=fingerprint,
+        matrix=matrix,
+        created_at=created_at,
+    )
     return ExperimentLedgerRecord(
         id=identifier,
         run_id=run_id,
@@ -59,4 +86,8 @@ def create_experiment_ledger_record(
     )
 
 
-__all__ = ["ExperimentLedgerRecord", "create_experiment_ledger_record"]
+__all__ = [
+    "ExperimentLedgerRecord",
+    "compute_experiment_ledger_id",
+    "create_experiment_ledger_record",
+]

@@ -5,7 +5,10 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 
 from src.counterfactual_reproducibility import compare_fingerprints
-from src.experiment_ledger import ExperimentLedgerRecord
+from src.experiment_ledger import (
+    ExperimentLedgerRecord,
+    compute_experiment_ledger_id,
+)
 from src.memory import MemoryRecord, create_memory
 
 
@@ -20,6 +23,20 @@ class ExperimentMemoryBridge:
 
     def as_dict(self) -> dict:
         return asdict(self)
+
+
+def _ledger_integrity_ok(record: ExperimentLedgerRecord) -> bool:
+    try:
+        expected = compute_experiment_ledger_id(
+            run_id=record.run_id,
+            fingerprint=record.fingerprint,
+            matrix=record.matrix,
+            created_at=record.created_at,
+            version=record.version,
+        )
+    except (TypeError, ValueError):
+        return False
+    return expected == record.id
 
 
 def bridge_verified_experiment_to_memory(
@@ -40,10 +57,10 @@ def bridge_verified_experiment_to_memory(
             "verification record must be distinct",
         )
 
-    if baseline.fingerprint.result_fingerprint != baseline.id:
-        raise ValueError("baseline fingerprint does not match ledger identity")
-    if verification.fingerprint.result_fingerprint != verification.id:
-        raise ValueError("verification fingerprint does not match ledger identity")
+    if not _ledger_integrity_ok(baseline):
+        raise ValueError("baseline ledger identity does not match its content")
+    if not _ledger_integrity_ok(verification):
+        raise ValueError("verification ledger identity does not match its content")
 
     comparison = compare_fingerprints(
         baseline.fingerprint,
