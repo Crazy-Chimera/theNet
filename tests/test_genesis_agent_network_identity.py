@@ -47,9 +47,27 @@ def _bootstrap(tmp_path):
 
 
 def test_f11_genesis_record_is_deterministic(tmp_path):
-    first = _bootstrap(tmp_path)
-    second = _bootstrap(tmp_path)
-    assert first[3] == second[3]
+    vault = IdentityVault(tmp_path / "vault.json")
+    identity = vault.create("genesis-password")
+    genesis = create_genesis("agent:genesis", "2026-09-30T00:00:00Z")
+    resource = create_resource_state(100.0, 0.0, "2026-09-30T00:00:00Z")
+    first = create_genesis_record(
+        genesis,
+        identity,
+        "initial-state",
+        resource,
+        capability_manifest=("proposal", "verification"),
+        invariant_set=("immutable-state", "consensus-before-mutation"),
+    )
+    second = create_genesis_record(
+        genesis,
+        identity,
+        "initial-state",
+        resource,
+        capability_manifest=("proposal", "verification"),
+        invariant_set=("immutable-state", "consensus-before-mutation"),
+    )
+    assert first == second
 
 
 def test_f11_genesis_record_verifies(tmp_path):
