@@ -26,3 +26,23 @@ The initial F12 backend is SQLite. The domain contracts are independent of SQLit
 ## Runtime flow
 
 Genesis -> Agent Identity -> Network Identity -> Membership -> Admission -> Handshake -> Live Registry -> Peer Discovery -> Membership Snapshot -> Snapshot Quorum -> Collective Computation -> Memory / Omega-Credit / Resource Allocation
+
+
+## F12.5–F12.8 lifecycle
+
+The live lifecycle is:
+
+JOIN -> ADMISSION -> HANDSHAKE -> SESSION -> DISCOVERY -> SNAPSHOT -> COMPUTE -> LEAVE
+
+heartbeat(session_id, seen_at=...) records the latest liveness observation for an established session. Historical session identity remains unchanged.
+
+validate_snapshot_current(snapshot) is an explicit freshness guard for callers that require a computation to start only against the current membership epoch. It is intentionally separate from snapshot-bound computation: an already-created snapshot remains valid as historical evidence even after membership changes.
+
+A reconnect reuses the immutable F11 identity and membership record. The runtime reactivates the member only with the same membership identity; it cannot replace it with a different membership record.
+
+Removing an Agent deactivates its live membership and closes sessions involving that Agent. Historical membership and snapshots remain persisted.
+
+This creates two deliberate semantics:
+
+1. Historical reproducibility: old snapshots remain executable/auditable against their original quorum.
+2. Fresh-start safety: a new computation can require validate_snapshot_current() before it begins.
