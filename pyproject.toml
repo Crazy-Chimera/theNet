@@ -8,5 +8,8 @@ version = "0.1.0"
 description = "Relational network architecture for collective computation"
 requires-python = ">=3.12"
 
+[project.scripts]
+thenet = "thenet.cli:main"
+
 [tool.setuptools]
 packages = ["src", "thenet"]
