@@ -70,9 +70,11 @@ def run_network_lifecycle_mvp(
             runtime.add_agent(item.admission.membership, item.agent)
 
     phases.append("MEMBERSHIP")
+    active_ids = tuple(item.agent_id for item in runtime.active_members())
+    agent_by_id = {item.agent.agent_id: item for item in boot.agents}
     peers = {
-        item.agent.agent_id: len(runtime.discover_peers(item.agent.agent_id))
-        for item in boot.agents
+        agent_id: len(runtime.discover_peers(agent_id))
+        for agent_id in active_ids
     }
     phases.append("PEER_DISCOVERY")
 
@@ -88,7 +90,9 @@ def run_network_lifecycle_mvp(
     snapshot = runtime.snapshot(created_at=created_at)
     phases.append("SNAPSHOT")
 
-    proposer = boot.agents[0]
+    if not active_ids:
+        raise ValueError("network has no active agents")
+    proposer = agent_by_id[active_ids[0]]
     proposal = create_proposal(
         proposer.state.subject_id,
         proposer.state.id,
@@ -103,7 +107,8 @@ def run_network_lifecycle_mvp(
             True,
             created_at,
         )
-        for item in boot.agents[1:]
+        for agent_id in active_ids[1:]
+        for item in (agent_by_id[agent_id],)
     )
     announcement = create_work_announcement(snapshot, proposal)
     phases.append("WORK_ANNOUNCEMENT")
@@ -128,7 +133,7 @@ def run_network_lifecycle_mvp(
         phases=tuple(phases),
         network_id=boot.network.network_id,
         epoch=snapshot.epoch,
-        active_agents=tuple(item.agent.agent_id for item in boot.agents),
+        active_agents=active_ids,
         peer_counts=peers,
         sessions=tuple(asdict(session) for session in runtime.sessions()),
         snapshot=_snapshot(snapshot),
