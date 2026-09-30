@@ -8,8 +8,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import re
+from typing import TYPE_CHECKING
 
-from src.recursive_convergence import RecursiveCycle
+if TYPE_CHECKING:
+    from src.recursive_convergence import RecursiveCycle
 
 
 _TOKEN_RE = re.compile(r"[A-Za-z0-9_]+", re.UNICODE)
@@ -47,7 +49,7 @@ def _novelty(current: str, previous: str | None) -> float:
 
 
 def measure_recursive_learning(
-    cycles: tuple[RecursiveCycle, ...],
+    cycles: tuple["RecursiveCycle", ...],
 ) -> tuple[RecursiveLearningMetrics, ...]:
     """Measure each recursive cycle against its immediately preceding cycle.
 
