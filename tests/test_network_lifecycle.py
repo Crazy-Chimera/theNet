@@ -30,3 +30,37 @@ def test_network_lifecycle_mvp_completes_end_to_end(tmp_path):
     assert result.coordination["verifier_ids"] == ("agent-1", "agent-2")
     assert result.outcome["outcome_id"]
     assert result.outcome["credit_id"]
+
+
+def test_network_lifecycle_service_persists_membership_and_snapshot_epoch(tmp_path):
+    from src.network_lifecycle import NetworkLifecycleService
+
+    service = NetworkLifecycleService(
+        database=tmp_path / "runtime.db",
+        vault_path=tmp_path / "vault",
+        password="test-password",
+        created_at="2026-09-30T03:00:00Z",
+        proposal_text="bootstrap",
+    )
+    first = service.run(
+        created_at="2026-09-30T03:00:01Z",
+        proposal_text="first computation",
+    )
+    assert first.snapshot["quorum"] == 2
+    assert len(service.runtime.active_members()) == 3
+
+    service.remove_agent("agent-2")
+    second = service.snapshot(created_at="2026-09-30T03:00:02Z")
+    assert second.epoch > first.snapshot["epoch"]
+    assert second.members == ("agent-0", "agent-1")
+    assert second.quorum == 1
+
+    reopened = NetworkLifecycleService(
+        database=tmp_path / "runtime.db",
+        vault_path=tmp_path / "vault-2",
+        password="test-password",
+        created_at="2026-09-30T04:00:00Z",
+        proposal_text="new process",
+    )
+    persisted = reopened.runtime.get_snapshot(second.snapshot_id)
+    assert persisted == second
