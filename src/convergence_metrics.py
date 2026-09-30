@@ -117,7 +117,7 @@ def measure_convergence_metrics(
     k = sum(checks) / len(checks)
 
     c = _complexity(
-        len(convergence.candidate_states),
+        len(convergence.proposal_ids),
         phi.node_count,
         phi.edge_count,
     )
