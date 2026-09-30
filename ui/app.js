@@ -254,6 +254,45 @@ async function runStateDiff() {
   }
 }
 
+async function runExperimentMatrix() {
+  const button = $("run-experiment-matrix");
+  const result = $("experiment-matrix-result");
+  button.disabled = true;
+  button.textContent = "Running…";
+  try {
+    const data = await api("/v1/control/experiment-matrix", {
+      cases: [
+        {id: "A", cycle_index: 2, proposal_text: $("matrix-proposal-a").value.trim()},
+        {id: "B", cycle_index: 3, proposal_text: $("matrix-proposal-b").value.trim()}
+      ]
+    });
+    const matrix = data.matrix;
+    result.className = "experiment-matrix-result";
+    result.innerHTML =
+      '<div class="trace-summary"><div><small>Baseline cycles</small><strong>' +
+      text(matrix.baseline_cycles) + '</strong></div><div><small>Cases</small><strong>' +
+      text(matrix.case_count) + '</strong></div></div>' +
+      '<div class="experiment-case-list">' +
+      matrix.cases.map(function(item) {
+        const v = item.impact_vector;
+        return '<div class="experiment-case"><div><strong>' + text(item.case.id) +
+          '</strong><span>C' + text(item.case.cycle_index) + '</span><code>' +
+          text(item.case.proposal_text) + '</code></div>' +
+          '<div><small>First divergence</small><strong>C' +
+          text(v.first_divergence_cycle) + ' · ' + text(v.first_divergence_artifact) +
+          '</strong></div><div><small>ΔU</small><strong>' +
+          formatNumber(v.aggregate.delta_utility) + '</strong></div><div><small>ΔΩ</small><strong>' +
+          formatNumber(v.aggregate.delta_omega_credit) + '</strong></div><div><small>Changed fields</small><strong>' +
+          text(v.aggregate.changed_fields) + '</strong></div></div>';
+      }).join("") + '</div>';
+  } catch (error) {
+    addEvent("ERROR", error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Run experiment matrix";
+  }
+}
+
 async function runImpactVector() {
   const button = $("run-impact-vector");
   const result = $("impact-vector-result");
@@ -703,6 +742,7 @@ $("run-counterfactual").addEventListener("click", runCounterfactual);
 $("run-causal-trace").addEventListener("click", runCausalTrace);
 $("run-state-diff").addEventListener("click", runStateDiff);
 $("run-impact-vector").addEventListener("click", runImpactVector);
+$("run-experiment-matrix").addEventListener("click", runExperimentMatrix);
 
 $("genesis-created-at").value = nowInputValue();
 $("relation-created-at").value = nowInputValue();
