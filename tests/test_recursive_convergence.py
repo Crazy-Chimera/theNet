@@ -4,6 +4,7 @@ from src.agent_state import create_agent_state
 from src.genesis_population import create_genesis_population
 from src.recursive_convergence import run_recursive_convergence
 from src.resource_state import create_resource_state
+from src.adaptive_resource_allocation import create_adaptive_resource_allocation
 
 
 def _build():
@@ -125,7 +126,13 @@ def test_recursive_convergence_feeds_adaptive_budget_into_next_cycle():
 
     # The third cycle must consume the cumulative F10.3 allocation, where
     # verified improvement increases cycle 2's share above cycle 1's share.
-    expected = result.adaptive_resource_allocation(100.0, 100.0)
+    # Cycle 3 consumed the allocation computed after cycles 1-2, so replay
+    # the same historical prefix rather than recomputing from cycle 3.
+    expected = create_adaptive_resource_allocation(
+        learning[:2],
+        100.0,
+        100.0,
+    )
     shares = dict(expected.memory_by_cycle)
     cycle1_share = shares[1]
     cycle2_share = shares[2]
