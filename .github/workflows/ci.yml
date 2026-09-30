@@ -41,5 +41,12 @@ jobs:
         env:
           PYTHONPATH: .
         run: python -m pytest -q
-      - name: Smoke test live Render health endpoint
-        run: curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors https://thenet-eew6.onrender.com/health
+      - name: Smoke test live Render MVP
+        run: |
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors https://thenet-eew6.onrender.com/health
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors https://thenet-eew6.onrender.com/ | grep -q "theNet MVP 0.1"
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors \
+            -X POST https://thenet-eew6.onrender.com/v1/closure \
+            -H "Content-Type: application/json" \
+            -d '{"source_subject":"CI Agent Ω","target_subject":"theNet","relation_kind":"verifies","proposal_text":"CI closure","evidence":"live Render smoke test","expression_id":"ci-expression","created_at":"2026-09-30T00:00:00Z"}' \
+            | grep -q '"agent_state"'
