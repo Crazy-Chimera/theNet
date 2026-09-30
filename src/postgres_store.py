@@ -55,7 +55,7 @@ class PostgresStore:
                     f"INSERT INTO {table} (id, payload) VALUES (%s, %s)",
                     (identifier, payload),
                 )
-                self._connection.commit()
+                with self._connection.cursor() as cursor:\n                cursor.execute(\n                    "CREATE TABLE IF NOT EXISTS experiment_ledger (id TEXT PRIMARY KEY, payload TEXT NOT NULL)"\n                )\n            self._connection.commit()\n            self._connection.commit()
                 return
 
             if existing[0] != payload:
