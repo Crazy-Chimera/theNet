@@ -18,6 +18,7 @@ from src.resource_state import create_resource_state
 from src.evidence_graph import build_evidence_graph
 from src.evidence_query import query_evidence_graph, trace_evidence_path
 from src.replay import compare_recursive_replay
+from src.counterfactual_replay import CounterfactualSpec, run_counterfactual
 from src.postgres_store import PostgresStore
 from src.relation import create_relation
 from src.sqlite_store import SQLiteStore
@@ -88,6 +89,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             "/v1/control/demo": self._control_demo,
             "/v1/control/query": self._control_query,
             "/v1/control/replay": self._control_replay,
+            "/v1/control/counterfactual": self._control_counterfactual,
         }
         path = urlparse(self.path).path
         handler = routes.get(path)
@@ -164,7 +166,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
         return result
 
 
-    def _control_run(self):
+    def _control_run(self, proposal_overrides=None):
         population = create_genesis_population(3, "2026-09-30T00:00:00Z")
         initial = population.agents[0]
         memory = create_resource_state(100.0, 0.0, "2026-09-30T00:00:00Z")
@@ -173,8 +175,12 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             population=population,
             initial_state=initial,
             proposal_builder=lambda index, state, previous: (
-                "observe initial state" if previous is None
-                else f"refine from memory {previous.result.memory.id}"
+                proposal_overrides.get(index)
+                if proposal_overrides and index in proposal_overrides
+                else (
+                    "observe initial state" if previous is None
+                    else f"refine from memory {previous.result.memory.id}"
+                )
             ),
             executor=lambda proposal: f"executed:{proposal.proposal}",
             quorum=2,
@@ -186,6 +192,25 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             adaptive_compute_capacity=100.0,
             utility_builder=lambda index, previous: min(float(index) / 2.0, 1.0),
         )
+
+    def _control_counterfactual(self, payload: dict[str, Any]) -> dict[str, Any]:
+        cycle_index = payload.get("cycle_index")
+        if isinstance(cycle_index, bool) or not isinstance(cycle_index, int):
+            raise ValueError("cycle_index must be an integer")
+        proposal_text = self._required_string(payload, "proposal_text")
+        baseline = self._control_run()
+        spec = CounterfactualSpec(cycle_index=cycle_index, proposal_text=proposal_text)
+        counterfactual, comparison = run_counterfactual(
+            baseline=baseline,
+            spec=spec,
+            runner=lambda overrides: self._control_run(overrides),
+        )
+        result = comparison.as_dict()
+        result["counterfactual_cycle_count"] = counterfactual.cycle_count
+        result["counterfactual_state_versions"] = list(counterfactual.state_versions)
+        result["counterfactual_all_converged"] = counterfactual.all_converged
+        return result
+
 
     def _control_demo(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Run one deterministic three-cycle F10.3 demonstration for Control Room."""
