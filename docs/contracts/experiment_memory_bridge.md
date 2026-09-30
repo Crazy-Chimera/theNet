@@ -1,12 +1,11 @@
-# V1.9 — Ledger → Ω-Memory Bridge
+# V1.9 — Ledger → Ω² Memory Bridge
 
-A fingerprint identifies a reproducible experiment; it does not itself constitute verification.
+A fingerprint identifies an experiment design and observed deterministic result; it does not by itself constitute verification.
 
-The bridge creates an immutable Ω² MemoryRecord only when an explicit non-empty verification reference is supplied and the ledger identity still matches its result fingerprint.
+Memory admission requires two distinct immutable ledger records whose fingerprints agree on design, result, baseline graph, and runtime contract.
 
-Memory uses:
-- source_id = ledger.id
-- kind = verified-experiment
-- subject_id and created_at supplied by the caller
+When that comparison succeeds, the bridge creates an immutable MemoryRecord with source_id equal to the baseline ledger id and kind equal to verified-experiment.
 
-The bridge does not modify consensus, replay, counterfactual execution, credit, or experiment results.
+A changed hypothesis, mismatched reproduction, self-verification, or tampered ledger identity remains outside Ω² Memory.
+
+The bridge is descriptive and deterministic. It does not modify consensus, replay, counterfactual execution, credit, or experiment results.
