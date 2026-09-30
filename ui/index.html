@@ -94,6 +94,17 @@
             <div id="replay-result" class="replay-result empty-state">No replay executed.</div>
           </div>
 
+          <div id="counterfactual-panel" class="replay-panel">
+            <div class="panel-heading"><div><p class="eyebrow">COUNTERFACTUAL</p><h3>Isolated proposal branch</h3></div><span id="counterfactual-status" class="tag">NOT RUN</span></div>
+            <p class="form-note">Replace one proposal input, keep the baseline immutable, and inspect every downstream artifact divergence.</p>
+            <div class="counterfactual-form">
+              <label>Cycle<select id="counterfactual-cycle"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></label>
+              <label class="counterfactual-proposal-label">Counterfactual proposal<input id="counterfactual-proposal" value="counterfactual hypothesis" autocomplete="off"></label>
+              <button id="run-counterfactual" type="button">Run counterfactual</button>
+            </div>
+            <div id="counterfactual-result" class="replay-result empty-state">No counterfactual branch executed.</div>
+          </div>
+
           <div class="graph-grid">
             <article class="graph-panel">
               <div class="panel-heading"><div><p class="eyebrow">MEMORY GRAPH</p><h3>Recursive memory lineage</h3></div></div>
