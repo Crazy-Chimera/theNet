@@ -18,7 +18,7 @@
         </div>
       </div>
       <nav aria-label="Primary navigation">
-        <a class="nav-item active" href="#overview">Overview</a>
+        <a class="nav-item active" href="#control">Ω Control Room</a>
         <a class="nav-item" href="#genesis">Genesis</a>
         <a class="nav-item" href="#relations">Relations</a>
         <a class="nav-item" href="#closure">Agent Ω</a>
@@ -39,6 +39,41 @@
         </div>
         <div class="runtime-badge" id="runtime-status">LIVE</div>
       </header>
+
+
+      <section id="control" class="section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Ω CONTROL ROOM · F10.3</p>
+            <h2>Recursive convergence</h2>
+            <p class="subtitle">Observe verified learning becoming the next finite resource budget.</p>
+          </div>
+          <button id="run-control-demo" type="button">Run 3-cycle demo</button>
+        </div>
+
+        <div class="pipeline" id="cycle-pipeline" aria-label="Collective computation pipeline">
+          <span>PROPOSAL</span><i>→</i><span>VERIFICATION</span><i>→</i><span>CONSENSUS</span><i>→</i>
+          <span>CONVERGENCE</span><i>→</i><span>OUTCOME</span><i>→</i><span>Ω-CREDIT</span><i>→</i>
+          <span>LEARNING</span><i>→</i><span>RESOURCES</span><i>→</i><span>NEXT CYCLE</span>
+        </div>
+
+        <div class="control-grid">
+          <article class="panel">
+            <div class="panel-heading"><div><p class="eyebrow">F10</p><h2>Convergence metrics</h2></div><span id="control-status" class="tag">IDLE</span></div>
+            <div id="f10-metrics" class="metric-grid empty-state">Run the deterministic demo to inspect runtime metrics.</div>
+            <p class="form-note">K/C/R/Φ are project-level operational metrics, not established physical constants.</p>
+          </article>
+          <article class="panel">
+            <div class="panel-heading"><div><p class="eyebrow">F10.1 → F10.3</p><h2>Learning → resources</h2></div></div>
+            <div id="feedback-state" class="feedback empty-state">No recursive run yet.</div>
+          </article>
+        </div>
+
+        <article class="panel">
+          <div class="panel-heading"><div><p class="eyebrow">CYCLES</p><h2>Recursive evidence chain</h2></div></div>
+          <div id="cycle-list" class="cycle-list empty-state">No cycles loaded.</div>
+        </article>
+      </section>
 
       <section id="overview" class="section">
         <div class="section-heading">
