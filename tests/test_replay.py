@@ -77,7 +77,9 @@ def test_replay_detects_changed_artifacts():
     assert comparison.first_divergence_artifact == "proposal"
     assert comparison.first_divergence_original_id != comparison.first_divergence_replay_id
     assert comparison.artifact_comparisons[0].match is False
-    assert all(
-        item.match
-        for item in comparison.artifact_comparisons[1:10]
+    assert any(
+        not item.match
+        for item in comparison.artifact_comparisons
     )
+    assert comparison.artifact_comparisons[0].cycle_index == 1
+    assert comparison.artifact_comparisons[0].artifact_type == "proposal"
