@@ -112,6 +112,8 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             "/v1/relations": self._create_relation,
             "/v1/network/lifecycle": self._network_lifecycle,
             "/v1/network/leave": self._network_leave,
+            "/v1/network/join": self._network_join,
+            "/v1/network/heartbeat": self._network_heartbeat,
             "/v1/network/snapshot": self._network_snapshot,
             "/v1/closure": self._build_closure,
             "/v1/control/demo": self._control_demo,
@@ -173,6 +175,23 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             )
         return asdict(result)
 
+    def _network_join(self, payload: dict[str, Any]) -> dict[str, Any]:
+        agent_id = self._required_string(payload, "agent_id")
+        created_at = self._required_string(payload, "created_at")
+        service = self._network_service(
+            created_at=created_at,
+            proposal_text=payload.get("proposal_text", "network lifecycle"),
+        )
+        service.add_agent(agent_id)
+        snapshot = service.snapshot(created_at=created_at)
+        return {
+            "network_id": service.bootstrap.network.network_id,
+            "joined_agent": agent_id,
+            "snapshot": asdict(snapshot),
+            "active_agents": [item.agent_id for item in service.runtime.active_members()],
+            "membership_events": [list(item) for item in service.runtime.membership_events()],
+        }
+
     def _network_leave(self, payload: dict[str, Any]) -> dict[str, Any]:
         agent_id = self._required_string(payload, "agent_id")
         created_at = self._required_string(payload, "created_at")
@@ -188,6 +207,18 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             "snapshot": asdict(snapshot),
             "active_agents": [item.agent_id for item in service.runtime.active_members()],
             "membership_events": [list(item) for item in service.runtime.membership_events()],
+        }
+
+    def _network_heartbeat(self, payload: dict[str, Any]) -> dict[str, Any]:
+        session_id = self._required_string(payload, "session_id")
+        seen_at = self._required_string(payload, "seen_at")
+        service = self._network_service(
+            created_at=seen_at,
+            proposal_text=payload.get("proposal_text", "network lifecycle"),
+        )
+        return {
+            "network_id": service.bootstrap.network.network_id,
+            "session": service.heartbeat(session_id, seen_at=seen_at),
         }
 
     def _network_snapshot(self, payload: dict[str, Any]) -> dict[str, Any]:
