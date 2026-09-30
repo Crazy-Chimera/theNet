@@ -54,12 +54,26 @@ class NetworkRuntime:
             CREATE TABLE IF NOT EXISTS network_runtime_epochs (network_id TEXT PRIMARY KEY, epoch INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS network_runtime_snapshots (snapshot_id TEXT PRIMARY KEY, network_id TEXT NOT NULL, epoch INTEGER NOT NULL, members_json TEXT NOT NULL, quorum INTEGER NOT NULL, created_at TEXT NOT NULL, version INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS network_runtime_heartbeats (session_id TEXT PRIMARY KEY, network_id TEXT NOT NULL, seen_at TEXT NOT NULL, version INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS network_runtime_membership_events (event_id TEXT PRIMARY KEY, network_id TEXT NOT NULL, epoch INTEGER NOT NULL, agent_id TEXT NOT NULL, event_type TEXT NOT NULL, created_at TEXT NOT NULL, version INTEGER NOT NULL);
             """)
             db.execute("INSERT OR IGNORE INTO network_runtime_epochs VALUES (?,0)",(network.network_id,))
 
     def _connect(self):
         db=sqlite3.connect(self.database); db.row_factory=sqlite3.Row; return db
-    def _bump_epoch(self,db): db.execute("UPDATE network_runtime_epochs SET epoch=epoch+1 WHERE network_id=?",(self.network.network_id,))
+    def _bump_epoch(self,db):
+        db.execute("UPDATE network_runtime_epochs SET epoch=epoch+1 WHERE network_id=?",(self.network.network_id,))
+        return int(db.execute("SELECT epoch FROM network_runtime_epochs WHERE network_id=?",(self.network.network_id,)).fetchone()["epoch"])
+
+    def _record_membership_event(self,db,agent_id,event_type,created_at):
+        epoch=self._bump_epoch(db)
+        event_id=_hash({"agent_id":agent_id,"created_at":created_at,"epoch":epoch,"event_type":event_type,"network_id":self.network.network_id,"version":1})
+        db.execute("INSERT INTO network_runtime_membership_events VALUES (?,?,?,?,?,?,1)",(event_id,self.network.network_id,epoch,agent_id,event_type,created_at))
+        return epoch
+
+    def membership_events(self)->tuple[tuple[str,int,str,str,str],...]:
+        with self._connect() as db:
+            rows=db.execute("SELECT event_id,epoch,agent_id,event_type,created_at FROM network_runtime_membership_events WHERE network_id=? ORDER BY epoch,event_id",(self.network.network_id,)).fetchall()
+        return tuple((r["event_id"],r["epoch"],r["agent_id"],r["event_type"],r["created_at"]) for r in rows)
 
     def add_agent(self,membership: NetworkMembership,agent: AgentIdentity)->PeerDescriptor:
         if not isinstance(membership,NetworkMembership) or not isinstance(agent,AgentIdentity): raise TypeError("invalid membership or agent")
@@ -70,9 +84,9 @@ class NetworkRuntime:
             row=db.execute("SELECT * FROM network_runtime_members WHERE agent_id=?",(agent.agent_id,)).fetchone()
             if row:
                 if row["membership_id"]!=membership.membership_id: raise ValueError("agent already has a different membership")
-                if row["status"]!="active": db.execute("UPDATE network_runtime_members SET status='active' WHERE agent_id=?",(agent.agent_id,)); self._bump_epoch(db)
+                if row["status"]!="active": db.execute("UPDATE network_runtime_members SET status='active' WHERE agent_id=?",(agent.agent_id,)); self._record_membership_event(db,agent.agent_id,"rejoin",self.created_at)
             else:
-                db.execute("INSERT INTO network_runtime_members VALUES (?,?,?,?,?,?,?,?)",(membership.membership_id,membership.network_id,membership.agent_id,membership.genesis_id,membership.role,"active",agent.identity_did,membership.version)); self._bump_epoch(db)
+                db.execute("INSERT INTO network_runtime_members VALUES (?,?,?,?,?,?,?,?)",(membership.membership_id,membership.network_id,membership.agent_id,membership.genesis_id,membership.role,"active",agent.identity_did,membership.version)); self._record_membership_event(db,agent.agent_id,"join",self.created_at)
         return PeerDescriptor(agent.agent_id,agent.identity_did,membership.role,"active",membership.network_id,membership.genesis_id)
 
     def remove_agent(self,agent_id:str)->None:
@@ -81,7 +95,7 @@ class NetworkRuntime:
             if not row: raise KeyError(f"unknown agent: {agent_id}")
             if row["status"]=="active":
                 db.execute("UPDATE network_runtime_members SET status='removed' WHERE agent_id=?",(agent_id,))
-                db.execute("UPDATE network_runtime_sessions SET state='closed' WHERE initiator_id=? OR responder_id=?",(agent_id,agent_id)); self._bump_epoch(db)
+                db.execute("UPDATE network_runtime_sessions SET state='closed' WHERE initiator_id=? OR responder_id=?",(agent_id,agent_id)); self._record_membership_event(db,agent_id,"leave",self.created_at)
 
     def active_members(self)->tuple[PeerDescriptor,...]:
         with self._connect() as db: rows=db.execute("SELECT agent_id,identity_did,role,status,network_id,genesis_id FROM network_runtime_members WHERE network_id=? AND status='active' ORDER BY agent_id",(self.network.network_id,)).fetchall()
@@ -94,7 +108,11 @@ class NetworkRuntime:
         active={p.agent_id for p in self.active_members()}
         if handshake.initiator_id not in active or handshake.responder_id not in active: raise ValueError("handshake endpoint is not an active member")
         sid=_hash({"created_at":created_at,"handshake_id":handshake.handshake_id,"network_id":self.network.network_id,"version":1})
-        with self._connect() as db: db.execute("INSERT OR REPLACE INTO network_runtime_sessions VALUES (?,?,?,?,?,?,?,1)",(sid,self.network.network_id,handshake.initiator_id,handshake.responder_id,handshake.handshake_id,"established",created_at))
+        with self._connect() as db:
+            try:
+                db.execute("INSERT INTO network_runtime_sessions VALUES (?,?,?,?,?,?,?,1)",(sid,self.network.network_id,handshake.initiator_id,handshake.responder_id,handshake.handshake_id,"established",created_at))
+            except sqlite3.IntegrityError as exc:
+                raise ValueError("handshake replay or duplicate session") from exc
         return SessionState(sid,self.network.network_id,handshake.initiator_id,handshake.responder_id,handshake.handshake_id,"established",created_at)
 
     def heartbeat(self, session_id: str, *, seen_at: str) -> SessionState:
