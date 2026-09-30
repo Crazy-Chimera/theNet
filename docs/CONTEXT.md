@@ -49,7 +49,7 @@ The requested six-module verification view is treated as an operational map, not
 - Agent: `agent_state.py`, `agent.py`, Genesis closure and collective-computation orchestration provide the current Agent Ω state/decision boundary. `run_decision_cycle()` explicitly composes Θ → Σ → Γ → Ω → Π → Ω² and can bind a proposal to the verified Ed25519 identity. The cycle is side-effect free for canonical state; verified evolution remains the only state-changing path.
 - Paměť: `memory.py`, `evolution_memory.py` a `memory_store.py`; SQLiteMemoryStore nyní poskytuje explicitní episodickou, sémantickou a procedurální paměť s persistence/consistency testy.
 - Síť: `thenet/server.py` provides the verified HTTP/runtime boundary. `src/network.py` now provides an Ed25519-authenticated WebSocket bootstrap/peer registry and relay, with a real loopback two-agent integration test. A production Render WebSocket endpoint is NOT YET VERIFIED because the current Render service exposes the HTTP runtime only.
-- Kredit: the Ω-Credit family provides contribution/resource accounting and verified gates.
+- Kredit: the Ω-Credit family provides verified contribution/resource accounting, ledger/distribution/conservation gates, proportional resource allocation, and `omega_credit_account.py` for immutable Agent balances with verified earn/spend.
 - Timechain: no dedicated timechain.py package is currently present. Evolution history, execution chain and commit provide the current historical/branching substrate. A full branch/rollback/prediction/merge Timechain contract is NOT VERIFIED as such.
 
 These gaps are verification findings, not assumptions to be silently filled.
