@@ -380,7 +380,10 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             matrix, build_evidence_graph(baseline).id
         )
         ledger = create_experiment_ledger_record(
-            matrix=matrix, fingerprint=fingerprint, created_at=created_at
+            matrix=matrix,
+            fingerprint=fingerprint,
+            run_id=verification_id,
+            created_at=created_at,
         )
         bridge = bridge_verified_experiment_to_memory(
             ledger=ledger,
