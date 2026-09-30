@@ -15,7 +15,7 @@ def test_module_entry_point_stays_alive_and_serves_health() -> None:
     env["PORT"] = "8766"
 
     process = subprocess.Popen(
-        [sys.executable, "-m", "thenet"],
+        [sys.executable, "-m", "thenet", "server"],
         env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
