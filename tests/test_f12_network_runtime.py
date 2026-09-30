@@ -1,3 +1,4 @@
+import pytest
 from src.genesis_network_bootstrap import bootstrap_three_agent_network
 from src.network_runtime import NetworkRuntime
 
@@ -42,3 +43,22 @@ def test_new_snapshot_excludes_removed_agent(tmp_path):
     snapshot=runtime.snapshot(created_at="2026-09-30T00:03:00Z")
     assert snapshot.members==("agent-0","agent-1")
     assert snapshot.quorum==1
+
+def test_session_heartbeat_and_reconnect(tmp_path):
+    boot=bootstrap(tmp_path)
+    runtime=NetworkRuntime(tmp_path/"runtime.db",boot.network)
+    for item in boot.agents: runtime.add_agent(item.admission.membership,item.agent)
+    session=runtime.register_handshake(boot.handshakes[0],created_at="2026-09-30T00:10:00Z")
+    assert runtime.last_heartbeat(session.session_id) is None
+    updated=runtime.heartbeat(session.session_id,seen_at="2026-09-30T00:11:00Z")
+    assert updated.created_at=="2026-09-30T00:11:00Z"
+    assert runtime.last_heartbeat(session.session_id)=="2026-09-30T00:11:00Z"
+
+def test_stale_snapshot_can_be_detected_after_membership_change(tmp_path):
+    boot=bootstrap(tmp_path)
+    runtime=NetworkRuntime(tmp_path/"runtime.db",boot.network)
+    for item in boot.agents: runtime.add_agent(item.admission.membership,item.agent)
+    snapshot=runtime.snapshot(created_at="2026-09-30T00:12:00Z")
+    runtime.remove_agent("agent-2")
+    with pytest.raises(ValueError,match="stale"):
+        runtime.validate_snapshot_current(snapshot)
