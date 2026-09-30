@@ -21,6 +21,7 @@ from src.replay import compare_recursive_replay
 from src.counterfactual_replay import CounterfactualSpec, run_counterfactual
 from src.causal_trace import build_causal_trace
 from src.counterfactual_state_diff import build_counterfactual_state_diff
+from src.counterfactual_impact_vector import build_counterfactual_impact_vector
 from src.postgres_store import PostgresStore
 from src.relation import create_relation
 from src.sqlite_store import SQLiteStore
@@ -94,6 +95,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             "/v1/control/counterfactual": self._control_counterfactual,
             "/v1/control/causal-trace": self._control_causal_trace,
             "/v1/control/state-diff": self._control_state_diff,
+            "/v1/control/impact-vector": self._control_impact_vector,
         }
         path = urlparse(self.path).path
         handler = routes.get(path)
@@ -216,6 +218,28 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             "counterfactual_state_versions": list(counterfactual.state_versions),
         }
 
+
+    def _control_impact_vector(self, payload: dict[str, Any]) -> dict[str, Any]:
+        cycle_index = payload.get("cycle_index")
+        if isinstance(cycle_index, bool) or not isinstance(cycle_index, int):
+            raise ValueError("cycle_index must be an integer")
+        proposal_text = self._required_string(payload, "proposal_text")
+        baseline = self._control_run()
+        spec = CounterfactualSpec(cycle_index=cycle_index, proposal_text=proposal_text)
+        counterfactual, comparison = run_counterfactual(
+            baseline=baseline,
+            spec=spec,
+            runner=lambda overrides: self._control_run(overrides),
+        )
+        state_diff = build_counterfactual_state_diff(comparison, baseline, counterfactual)
+        impact = build_counterfactual_impact_vector(
+            comparison, baseline, counterfactual, state_diff
+        )
+        return {
+            "comparison": comparison.as_dict(),
+            "state_diff": state_diff.as_dict(),
+            "impact_vector": impact.as_dict(),
+        }
 
     def _control_demo(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Run one deterministic three-cycle F10.3 demonstration for Control Room."""
