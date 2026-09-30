@@ -1,14 +1,24 @@
-# theNet — Iteration 1 Context
+# theNet — Living Context
 
 ## Intent
 
-theNet is a relational network architecture in which verified relations, state transitions, memory, convergence, contribution, expression, self-modeling and safety form the basis for evolutionary collective computation.
+theNet is a relational network architecture in which explicit relations, immutable state transitions, memory, convergence, contribution, expression, self-modeling and safety form the basis for evolutionary collective computation.
 
-The initial implementation follows a step-by-step evolutionary protocol. The goal of Iteration 1 is to establish a short, living context contract before generating modules.
+The implementation is verified incrementally. This document is a living contract: it records the current architecture, engineering conventions, and verification boundary and must evolve with the repository.
 
-## Architecture
+## Current repository
 
-Foundational architecture:
+- Repository: Crazy-Chimera/theNet
+- Branch: main
+- Runtime: Python 3.12+
+- Test runner: pytest
+- CI: GitHub Actions
+- Deployment target: Render
+- Persistence: PostgreSQL when configured; SQLite fallback for local development
+
+The current implementation contains the foundational architecture plus collective-computation, evolution, resource, Ω-Credit, runtime, persistence and deployment layers.
+
+## Foundational architecture
 
 1. Genesis
 2. Relation
@@ -23,8 +33,6 @@ Foundational architecture:
 11. Ρ Relational Co-definition
 12. Σ + ΙΩΤΑ Genesis Closure
 
-Evolution continues after the foundational closure through verified evolution of the system.
-
 Core loop:
 
 RELATION → STATE → OBSERVE → INTERPRET → PROPOSE → SIMULATE → VERIFY → CONVERGE → COMMIT → MEMORY → LEARNING → REDEFINE SYSTEM
@@ -33,44 +41,68 @@ Central invariant:
 
 Identity(t+1) ≈ Identity(t) + verified evolution
 
+## Operational verification mapping
+
+The requested six-module verification view is treated as an operational map, not as a claim that six identically named packages currently exist.
+
+- Identita: no dedicated identity package is currently present. Identity/provenance is distributed across deterministic IDs, state objects, verification and execution/history layers. Ed25519/DID/vault behavior is therefore NOT VERIFIED by the current repository.
+- Agent: agent_state.py, closure and collective-computation orchestration provide the current Agent Ω state boundary.
+- Paměť: memory.py, evolution_memory.py and related persistence contracts.
+- Síť: thenet/server.py, HTTP runtime and runtime persistence currently provide the network boundary. A dedicated WebSocket bootstrap/peer module is NOT VERIFIED by the current repository.
+- Kredit: the Ω-Credit family provides contribution/resource accounting and verified gates.
+- Timechain: no dedicated timechain.py package is currently present. Evolution history, execution chain and commit provide the current historical/branching substrate. A full branch/rollback/prediction/merge Timechain contract is NOT VERIFIED as such.
+
+These gaps are verification findings, not assumptions to be silently filled.
+
+## Verification rules
+
+Every module under verification should have:
+
+- explicit contract;
+- implementation;
+- unit tests;
+- negative and edge-case tests;
+- deterministic/integrity tests where relevant;
+- integration verification before dependent modules are accepted.
+
+Deployment verification follows:
+
+CI/build → tests → deployment → runtime smoke test → observation.
+
 ## Conventions
 
-- Repository: Crazy-Chimera/theNet
-- Branch: main
 - Keep dependencies minimal.
 - Prefer deterministic behavior and immutable data where practical.
 - Use clear names and short functions.
 - Comments explain why rather than restating what code does.
-- User terminology: use “pohyb” rather than “dynamika”.
-- The project is developed module-by-module and iteration-by-iteration.
-- Existing repository state must be inspected before modifying existing files.
-
-## Verification
-
-Every module is expected to have:
-- a clear contract,
-- implementation,
-- unit tests,
-- negative and edge-case tests,
-- deterministic/integrity tests where relevant,
-- integration verification before dependent modules are introduced.
-
-Deployment verification follows:
-CI/build → tests → deployment → runtime verification → observation.
+- Use “pohyb” rather than “dynamika”.
+- Inspect repository state before modifying existing files.
+- Do not claim a capability merely because a contract or document exists; verify executable implementation and tests.
+- Do not treat passing tests as proof of physical or metaphysical claims.
 
 ## Φ-Elegance
 
 Architectural decisions should seek:
-- maximal relational utility,
-- verifiability,
-- continuity,
-- minimal unnecessary complexity,
+
+- maximal relational utility;
+- verifiability;
+- continuity;
+- minimal unnecessary complexity;
 - minimal unnecessary dependencies.
 
-Φ-Elegance is an engineering decision principle, not a claim that the conceptual Φ framework is an experimentally established physical theory.
+Φ-Elegance is an engineering decision principle, not an experimentally established physical measurement.
 
-## Iteration Protocol
+## Verification process
 
-Generate → test → verify → integrate → deploy → observe → learn → evolve.
+For each phase:
 
-Iteration 1 is complete when this context is committed and readable by both humans and the development process.
+1. inspect the actual repository;
+2. compare contract → implementation → tests;
+3. execute the relevant tests;
+4. inspect failures and edge cases;
+5. repair only verified defects;
+6. rerun CI;
+7. record the result and remaining gaps;
+8. proceed only when the phase gate is satisfied.
+
+The project should converge through repeated generate → test → verify → integrate → deploy → observe → learn → evolve cycles.
