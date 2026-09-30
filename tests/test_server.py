@@ -102,6 +102,14 @@ def test_control_room_demo_exposes_recursive_f10_feedback():
             assert payload["allocation"]["improvement_bonus"] == 0.25
             shares = dict(payload["allocation"]["memory_by_cycle"])
             assert shares[2] > shares[1]
+            audit = payload["cycles"][1]["audit"]
+            assert audit["verification_ids"]
+            for key in (
+                "consensus_id", "convergence_id", "execution_id", "commit_id",
+                "utility_id", "credit_id", "memory_id", "state_id",
+                "memory_before_id", "memory_after_id", "compute_before_id", "compute_after_id",
+            ):
+                assert audit[key]
     finally:
         stop_server(server, thread)
 
