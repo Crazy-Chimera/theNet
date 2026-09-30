@@ -55,11 +55,6 @@ def create_branch(
     base = base_state_id or chain.genesis_state_id
     if not isinstance(base, str) or not base.strip():
         raise ValueError("base_state_id must be non-empty")
-    if base != chain.genesis_state_id and not any(
-        base in branch.state_history for branch in chain.branches
-    ):
-        raise ValueError("base_state_id is not present in chain history")
-
     branch_id = sha256(
         json.dumps(
             {"base_state_id": base, "name": name, "version": 1},
