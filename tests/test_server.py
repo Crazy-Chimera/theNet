@@ -100,7 +100,8 @@ def test_control_room_demo_exposes_recursive_f10_feedback():
             assert payload["cycles"][1]["learning"]["memory_dependency"] is True
             assert payload["cycles"][1]["learning"]["verified_improvement"] is True
             assert payload["allocation"]["improvement_bonus"] == 0.25
-            assert payload["allocation"]["memory_by_cycle"][1][1] > 50.0
+            shares = dict(payload["allocation"]["memory_by_cycle"])
+            assert shares[2] > shares[1]
     finally:
         stop_server(server, thread)
 
