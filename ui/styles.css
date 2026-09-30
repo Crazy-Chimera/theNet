@@ -655,3 +655,74 @@ button:disabled { opacity: .55; cursor: wait; }
 @media (max-width: 600px) {
   .inspector-grid { grid-template-columns: 1fr; }
 }
+
+
+.evidence-explorer {
+  margin-top: 10px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--panel);
+}
+
+.explorer-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.explorer-columns > div > small {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.explorer-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 5px 0;
+  padding: 9px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #0b0e12;
+  color: var(--text);
+}
+
+.explorer-link:hover {
+  border-color: var(--accent);
+  filter: none;
+}
+
+.explorer-link small {
+  display: block;
+  color: var(--accent);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.explorer-link strong {
+  display: block;
+  margin: 2px 0;
+}
+
+.explorer-link code {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.explorer-direction {
+  flex: 0 0 18px;
+  font-size: 18px;
+}
+
+@media (max-width: 700px) {
+  .explorer-columns { grid-template-columns: 1fr; }
+}
