@@ -93,6 +93,7 @@ function renderControl() {
   const status = $("control-status");
 
   if (!control) return;
+  state.evidenceGraph = control.evidence_graph || null;
 
   status.textContent = control.all_converged ? "CONVERGED" : "CHECK";
   status.className = "tag " + (control.all_converged ? "tag-ok" : "tag-warn");
