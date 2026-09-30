@@ -64,3 +64,33 @@ def test_network_lifecycle_service_persists_membership_and_snapshot_epoch(tmp_pa
     )
     persisted = reopened.get_snapshot(second.snapshot_id)
     assert persisted == second
+
+
+def test_network_lifecycle_run_does_not_rejoin_removed_agent(tmp_path):
+    from src.network_lifecycle import NetworkLifecycleService
+
+    service = NetworkLifecycleService(
+        database=tmp_path / "runtime.db",
+        vault_path=tmp_path / "vault",
+        password="test-password",
+        created_at="2026-09-30T05:00:00Z",
+        proposal_text="bootstrap",
+    )
+    service.run(
+        created_at="2026-09-30T05:00:01Z",
+        proposal_text="initial computation",
+    )
+    service.remove_agent("agent-2")
+
+    result = service.run(
+        created_at="2026-09-30T05:00:02Z",
+        proposal_text="post-leave computation",
+    )
+    assert result.active_agents == ("agent-0", "agent-1")
+    assert result.snapshot["members"] == ("agent-0", "agent-1")
+    assert result.snapshot["quorum"] == 1
+
+    service.add_agent("agent-2")
+    joined = service.snapshot(created_at="2026-09-30T05:00:03Z")
+    assert joined.members == ("agent-0", "agent-1", "agent-2")
+    assert joined.quorum == 2
