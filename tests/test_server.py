@@ -102,6 +102,15 @@ def test_control_room_demo_exposes_recursive_f10_feedback():
             assert payload["allocation"]["improvement_bonus"] == 0.25
             shares = dict(payload["allocation"]["memory_by_cycle"])
             assert shares[2] > shares[1]
+            graph = payload["evidence_graph"]
+            assert graph["id"]
+            assert graph["nodes"]
+            assert graph["edges"]
+            node_ids = {node["id"] for node in graph["nodes"]}
+            assert audit["memory_id"] in node_ids
+            assert audit["state_id"] in node_ids
+            assert any(edge["relation"] == "remembered_as" for edge in graph["edges"])
+            assert any(edge["relation"] == "informs" for edge in graph["edges"])
             audit = payload["cycles"][1]["audit"]
             assert audit["verification_ids"]
             for key in (
