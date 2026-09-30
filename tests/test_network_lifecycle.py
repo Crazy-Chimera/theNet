@@ -94,3 +94,33 @@ def test_network_lifecycle_run_does_not_rejoin_removed_agent(tmp_path):
     joined = service.snapshot(created_at="2026-09-30T05:00:03Z")
     assert joined.members == ("agent-0", "agent-1", "agent-2")
     assert joined.quorum == 2
+
+
+def test_removed_agent_is_excluded_from_next_computation_snapshot(tmp_path):
+    from src.network_lifecycle import NetworkLifecycleService
+
+    service = NetworkLifecycleService(
+        database=tmp_path / "runtime.db",
+        vault_path=tmp_path / "vault",
+        password="test-password",
+        created_at="2026-09-30T05:00:00Z",
+        proposal_text="bootstrap",
+    )
+    first = service.run(
+        created_at="2026-09-30T05:00:01Z",
+        proposal_text="before leave",
+    )
+    service.remove_agent("agent-2")
+
+    second = service.run(
+        created_at="2026-09-30T05:00:02Z",
+        proposal_text="after leave",
+    )
+
+    assert first.snapshot["members"] == ("agent-0", "agent-1", "agent-2")
+    assert first.snapshot["quorum"] == 2
+    assert second.snapshot["members"] == ("agent-0", "agent-1")
+    assert second.snapshot["quorum"] == 1
+    assert second.active_agents == ("agent-0", "agent-1")
+    assert second.coordination["verifier_ids"] == ("agent-1",)
+    assert first.snapshot["snapshot_id"] != second.snapshot["snapshot_id"]
