@@ -231,6 +231,33 @@ def test_control_room_impact_vector_exposes_branch_deltas():
 
 
 
+def test_control_room_experiment_matrix_exposes_independent_cases():
+    server, thread = start_server()
+    try:
+        request = Request(
+            f"http://127.0.0.1:{server.server_port}/v1/control/experiment-matrix",
+            data=json.dumps({
+                "cases": [
+                    {"id": "a", "cycle_index": 2, "proposal_text": "alternative A"},
+                    {"id": "b", "cycle_index": 3, "proposal_text": "alternative B"},
+                ],
+            }).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(request) as response:
+            payload = json.load(response)
+            assert response.status == 200
+            matrix = payload["matrix"]
+            assert matrix["case_count"] == 2
+            assert [case["case"]["id"] for case in matrix["cases"]] == ["a", "b"]
+            assert matrix["cases"][0]["impact_vector"]["first_divergence_cycle"] == 2
+            assert matrix["cases"][1]["impact_vector"]["first_divergence_cycle"] == 3
+    finally:
+        stop_server(server)
+
+
+
 def test_control_room_query_traces_evidence_path():
     server, thread = start_server()
     try:
