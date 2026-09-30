@@ -45,7 +45,9 @@ Output: JSON object containing the closure components.
 
 ### `server`
 
-Starts the existing HTTP runtime. This preserves the deployment boundary while making the CLI the primary module entry point.
+Starts the existing HTTP runtime explicitly.
+
+When no subcommand is supplied, `python -m thenet` also starts the HTTP runtime. This preserves compatibility with the deployment boundary while keeping the CLI commands explicit for data operations.
 
 ## Invariants
 
