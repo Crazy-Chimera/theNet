@@ -111,7 +111,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
         serialized = asdict(result)
         serialized["relations"] = list(serialized["relations"])
         with _STATE_LOCK:
-            _STATE["events"].insert(0, _event("GENESIS", f"Created {result.subject}"))
+            _STATE["events"].insert(0, self._event("GENESIS", f"Created {result.subject}"))
         return serialized
 
     def _create_relation(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -124,7 +124,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
         self.server.store.save_relation(result)
         serialized = asdict(result)
         with _STATE_LOCK:
-            _STATE["events"].insert(0, _event("RELATION", f"Created {result.kind} relation"))
+            _STATE["events"].insert(0, self._event("RELATION", f"Created {result.kind} relation"))
         return serialized
 
     def _build_closure(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -145,7 +145,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             _STATE["closures"].append(result)
             _STATE["events"].insert(
                 0,
-                _event(
+                self._event(
                     "AGENT_OMEGA",
                     f"Genesis Closure committed: {closure.agent_state.id}",
                 ),
