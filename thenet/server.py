@@ -6,40 +6,59 @@ from dataclasses import asdict
 import json
 import os
 from http import HTTPStatus
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer as _ThreadingHTTPServer
 from pathlib import Path
 from threading import Lock
 from typing import Any
 from urllib.parse import urlparse
 
 from src.genesis import create_genesis
+from src.postgres_store import PostgresStore
 from src.relation import create_relation
+from src.sqlite_store import SQLiteStore
 from thenet.engine import build_closure
 
 UI_ROOT = Path(__file__).resolve().parents[1] / "ui"
 _STATE_LOCK = Lock()
 _STATE: dict[str, list[dict[str, Any]]] = {
-    "genesis": [],
-    "relations": [],
     "closures": [],
     "events": [],
 }
 
 
-def _event(kind: str, message: str) -> dict[str, str]:
-    return {"kind": kind, "message": message}
+def create_runtime_store():
+    """Select durable PostgreSQL when configured, otherwise local SQLite."""
+    dsn = os.getenv("THENET_POSTGRES_DSN")
+    if dsn:
+        return PostgresStore(dsn)
+
+    return SQLiteStore(os.getenv("THENET_SQLITE_PATH", ":memory:"))
+
+
+class ThreadingHTTPServer(_ThreadingHTTPServer):
+    """HTTP server with one process-wide persistence boundary."""
+
+    def __init__(self, server_address, RequestHandlerClass, store=None):
+        super().__init__(server_address, RequestHandlerClass)
+        self.store = store or create_runtime_store()
+
+    def server_close(self) -> None:
+        try:
+            self.store.close()
+        finally:
+            super().server_close()
 
 
 class RuntimeHandler(BaseHTTPRequestHandler):
     """Expose theNet engine and browser UI through one public HTTP boundary."""
 
-    server_version = "theNet/0.1"
+    server_version = "theNet/0.2"
 
     def do_GET(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
 
         if path == "/health":
-            self._json(HTTPStatus.OK, {"status": "ready", "version": "0.1.0"})
+            self._json(HTTPStatus.OK, {"status": "ready", "version": "0.2.0"})
             return
 
         if path == "/v1/state":
@@ -84,31 +103,29 @@ class RuntimeHandler(BaseHTTPRequestHandler):
         return
 
     def _create_genesis(self, payload: dict[str, Any]) -> dict[str, Any]:
-        result = asdict(
-            create_genesis(
-                subject=self._required_string(payload, "subject"),
-                created_at=self._required_string(payload, "created_at"),
-            )
+        result = create_genesis(
+            subject=self._required_string(payload, "subject"),
+            created_at=self._required_string(payload, "created_at"),
         )
+        self.server.store.save_genesis(result)
+        serialized = asdict(result)
+        serialized["relations"] = list(serialized["relations"])
         with _STATE_LOCK:
-            _STATE["genesis"].append(result)
-            _STATE["events"].insert(0, _event("GENESIS", f"Created {result['subject']}"))
-        return result
+            _STATE["events"].insert(0, _event("GENESIS", f"Created {result.subject}"))
+        return serialized
 
     def _create_relation(self, payload: dict[str, Any]) -> dict[str, Any]:
-        result = asdict(
-            create_relation(
-                source_id=self._required_string(payload, "source_id"),
-                target_id=self._required_string(payload, "target_id"),
-                kind=self._required_string(payload, "kind"),
-                created_at=self._required_string(payload, "created_at"),
-            )
+        result = create_relation(
+            source_id=self._required_string(payload, "source_id"),
+            target_id=self._required_string(payload, "target_id"),
+            kind=self._required_string(payload, "kind"),
+            created_at=self._required_string(payload, "created_at"),
         )
-        result["relations"] = list(result["relations"]) if "relations" in result else []
+        self.server.store.save_relation(result)
+        serialized = asdict(result)
         with _STATE_LOCK:
-            _STATE["relations"].append(result)
-            _STATE["events"].insert(0, _event("RELATION", f"Created {result['kind']} relation"))
-        return result
+            _STATE["events"].insert(0, _event("RELATION", f"Created {result.kind} relation"))
+        return serialized
 
     def _build_closure(self, payload: dict[str, Any]) -> dict[str, Any]:
         closure = build_closure(
@@ -120,6 +137,9 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             expression_id=self._required_string(payload, "expression_id"),
             created_at=self._required_string(payload, "created_at"),
         )
+        self.server.store.save_genesis(closure.source)
+        self.server.store.save_genesis(closure.target)
+        self.server.store.save_relation(closure.relation)
         result = asdict(closure)
         with _STATE_LOCK:
             _STATE["closures"].append(result)
@@ -135,11 +155,21 @@ class RuntimeHandler(BaseHTTPRequestHandler):
     def _state_snapshot(self) -> dict[str, Any]:
         with _STATE_LOCK:
             return {
-                "genesis": list(_STATE["genesis"]),
-                "relations": list(_STATE["relations"]),
+                "genesis": [
+                    asdict(item) | {"relations": list(item.relations)}
+                    for item in self.server.store.list_genesis()
+                ],
+                "relations": [
+                    asdict(item)
+                    for item in self.server.store.list_relations()
+                ],
                 "closures": list(_STATE["closures"]),
                 "events": list(_STATE["events"]),
             }
+
+    @staticmethod
+    def _event(kind: str, message: str) -> dict[str, str]:
+        return {"kind": kind, "message": message}
 
     def _static(self, name: str) -> None:
         path = (UI_ROOT / name).resolve()
