@@ -16,6 +16,7 @@ def test_ui_shell_references_assets():
     assert 'src="./app.js"' in html
     assert 'id="genesis-form"' in html
     assert 'id="relation-form"' in html
+    assert 'id="closure-form"' in html
 
 
 def test_ui_uses_foundational_terms():
@@ -23,8 +24,11 @@ def test_ui_uses_foundational_terms():
     app = (UI / "app.js").read_text(encoding="utf-8")
     assert "Genesis" in html
     assert "Relation" in html
-    assert "createGenesis" in app
-    assert "createRelation" in app
+    assert "Agent Ω" in html
+    assert "/v1/genesis" in app
+    assert "/v1/relations" in app
+    assert "/v1/closure" in app
+    assert "/v1/state" in app
 
 
 def test_ui_does_not_add_runtime_dependencies():
