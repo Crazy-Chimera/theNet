@@ -103,7 +103,7 @@ class NetworkRuntime:
             if row is None: raise KeyError(f"unknown session: {session_id}")
             if row["state"] != "established": raise ValueError("session is not established")
             db.execute("INSERT OR REPLACE INTO network_runtime_heartbeats VALUES (?,?,?,1)",(session_id,self.network.network_id,seen_at))
-        return SessionState(row["session_id"],row["network_id"],row["initiator_id"],row["responder_id"],row["handshake_id"],row["state"],seen_at,row["version"])
+        return SessionState(row["session_id"],row["network_id"],row["initiator_id"],row["responder_id"],row["handshake_id"],row["state"],row["created_at"],row["version"])
 
     def last_heartbeat(self, session_id: str) -> str | None:
         with self._connect() as db:
