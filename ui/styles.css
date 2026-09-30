@@ -1011,3 +1011,38 @@ button:disabled { opacity: .55; cursor: wait; }
   }
 }
 
+.impact-vector-result {
+  margin-top: 12px;
+}
+
+.impact-vector-grid {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.impact-vector-head,
+.impact-vector-row {
+  display: grid;
+  grid-template-columns: 44px repeat(9, minmax(58px, 1fr));
+  gap: 5px;
+  min-width: 720px;
+  padding: 7px 9px;
+  align-items: center;
+  font-size: 10px;
+}
+
+.impact-vector-head {
+  border-bottom: 1px solid var(--line);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.impact-vector-row {
+  border-bottom: 1px solid var(--line);
+}
+
+.impact-vector-row:last-child {
+  border-bottom: 0;
+}
