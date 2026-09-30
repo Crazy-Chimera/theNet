@@ -115,7 +115,7 @@ def test_recursive_convergence_feeds_adaptive_budget_into_next_cycle():
         ),
         memory_resource=memory,
         compute_resource=compute,
-        utility_builder=lambda index, previous: float(index),
+        utility_builder=lambda index, previous: min(float(index) / 2.0, 1.0),
         adaptive_memory_capacity=100.0,
         adaptive_compute_capacity=100.0,
     )
