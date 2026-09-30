@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 from src.genesis import create_genesis
 from src.genesis_population import create_genesis_population
 from src.resource_state import create_resource_state
+from src.evidence_graph import build_evidence_graph
 from src.postgres_store import PostgresStore
 from src.relation import create_relation
 from src.sqlite_store import SQLiteStore
@@ -243,6 +244,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
                 "total_memory": allocation.total_memory,
                 "total_compute": allocation.total_compute,
             },
+            "evidence_graph": build_evidence_graph(run).as_dict(),
             "resource_state": {
                 "memory_available": run.final_memory_resource.available,
                 "compute_available": run.final_compute_resource.available,
