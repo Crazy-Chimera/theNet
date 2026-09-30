@@ -145,6 +145,34 @@ def test_control_room_counterfactual_replay_diverges_at_selected_cycle():
         stop_server(server, thread)
 
 
+def test_control_room_causal_trace_exposes_propagation():
+    server, thread = start_server()
+    try:
+        request = Request(
+            f"http://127.0.0.1:{server.server_port}/v1/control/causal-trace",
+            data=json.dumps({
+                "cycle_index": 2,
+                "proposal_text": "counterfactual hypothesis",
+            }).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(request) as response:
+            payload = json.load(response)
+            assert response.status == 200
+            assert payload["trace"]["first_divergence_cycle"] == 2
+            assert payload["trace"]["first_divergence_artifact"] == "proposal"
+            assert payload["trace"]["propagation_cycles"] == [2, 3]
+            assert "C2:proposal" in payload["trace"]["changed_artifacts"]
+            assert any(
+                step["relation"] == "informs_next_proposal" and step["changed"]
+                for step in payload["trace"]["steps"]
+            )
+    finally:
+        stop_server(server)
+
+
+
 def test_control_room_query_traces_evidence_path():
     server, thread = start_server()
     try:
