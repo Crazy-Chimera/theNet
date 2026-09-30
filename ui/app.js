@@ -249,6 +249,55 @@ function renderEvents() {
 
 
 
+
+function renderEvidenceExplorer(id) {
+  const target = $("evidence-explorer");
+  const graph = state.evidenceGraph;
+  if (!graph || !id) {
+    target.className = "evidence-explorer empty-state";
+    target.textContent = "Select a node to explore its evidence path.";
+    return;
+  }
+  const node = graph.nodes.find(function(item) { return item.id === id; });
+  if (!node) return;
+  const incoming = graph.edges.filter(function(edge) { return edge.target === id; });
+  const outgoing = graph.edges.filter(function(edge) { return edge.source === id; });
+
+  function link(edge, incomingDirection) {
+    const otherId = incomingDirection ? edge.source : edge.target;
+    const other = graph.nodes.find(function(item) { return item.id === otherId; });
+    return '<button type="button" class="explorer-link" data-explorer-id="' + text(otherId) + '">' +
+      '<span class="explorer-direction">' + (incomingDirection ? "←" : "→") + '</span>' +
+      '<span><small>' + text(edge.relation) + '</small><strong>' + text(other?.type || "UNKNOWN") +
+      '</strong><code>' + text(otherId) + '</code></span></button>';
+  }
+
+  target.className = "evidence-explorer";
+  target.innerHTML =
+    '<div class="panel-heading"><div><p class="eyebrow">EVIDENCE EXPLORER</p><h3>' +
+    text(node.type) + ' · ' + text(node.label) + '</h3></div><code>' + text(node.id) + '</code></div>' +
+    '<div class="explorer-columns"><div><small>BACKWARD · INCOMING EVIDENCE</small>' +
+    (incoming.length ? incoming.map(function(edge) { return link(edge, true); }).join("") : '<div class="empty-state">No incoming evidence.</div>') +
+    '</div><div><small>FORWARD · OUTGOING EVIDENCE</small>' +
+    (outgoing.length ? outgoing.map(function(edge) { return link(edge, false); }).join("") : '<div class="empty-state">No outgoing evidence.</div>') +
+    '</div></div>';
+
+  target.querySelectorAll(".explorer-link").forEach(function(button) {
+    button.addEventListener("click", function() {
+      const nextId = button.dataset.explorerId;
+      const next = graph.nodes.find(function(item) { return item.id === nextId; });
+      const refs = graph.edges.filter(function(edge) { return edge.source === nextId || edge.target === nextId; });
+      inspectNode(next?.type || "NODE", nextId, {
+        label: next?.label,
+        refs: Object.fromEntries(refs.map(function(edge, index) {
+          return ["edge_" + (index + 1), edge.relation + " → " + (edge.source === nextId ? edge.target : edge.source)];
+        }))
+      });
+      renderEvidenceExplorer(nextId);
+    });
+  });
+}
+
 function inspectNode(type, id, meta = {}) {
   const target = $("node-inspector");
   target.className = "node-inspector";
@@ -324,6 +373,7 @@ function renderGraphs() {
           return ["edge_" + (index + 1), edge.relation + " → " + (edge.source === id ? edge.target : edge.source)];
         }))
       });
+      renderEvidenceExplorer(id);
     });
   });
 }
