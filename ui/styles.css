@@ -1085,3 +1085,32 @@ button:disabled { opacity: .55; cursor: wait; }
     grid-template-columns: 1fr;
   }
 }
+
+.reproducibility-result {
+  margin-top: 12px;
+}
+
+.fingerprint-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.fingerprint-grid > div {
+  display: grid;
+  gap: 5px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.fingerprint-grid code {
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+
+@media (max-width: 900px) {
+  .fingerprint-grid {
+    grid-template-columns: 1fr;
+  }
+}
