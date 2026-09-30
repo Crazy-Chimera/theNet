@@ -65,8 +65,9 @@ def test_unknown_target_is_reported():
 
 def test_message_requires_connection():
     async def scenario():
-        client = PeerClient("agent-a")
+        vault = IdentityVault(":memory:")
+        client = PeerClient(vault.create("password"), vault, "password")
         with pytest.raises(RuntimeError):
-            await client.send("agent-b", {"x": 1})
+            await client.send("missing", {"x": 1})
 
     asyncio.run(scenario())
