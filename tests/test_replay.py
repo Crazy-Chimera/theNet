@@ -40,6 +40,10 @@ def test_replay_matches_immutable_recursive_artifacts():
     assert comparison.run_match is True
     assert comparison.artifact_match is True
     assert comparison.original_graph_id == build_evidence_graph(first).id
+    assert comparison.first_divergence_cycle is None
+    assert comparison.first_divergence_artifact is None
+    assert len(comparison.artifact_comparisons) == 30
+    assert all(item.match for item in comparison.artifact_comparisons)
 
 
 def test_replay_detects_changed_artifacts():
@@ -69,3 +73,11 @@ def test_replay_detects_changed_artifacts():
     comparison = compare_recursive_replay(first, changed)
     assert comparison.deterministic is False
     assert comparison.graph_match is False
+    assert comparison.first_divergence_cycle == 1
+    assert comparison.first_divergence_artifact == "proposal"
+    assert comparison.first_divergence_original_id != comparison.first_divergence_replay_id
+    assert comparison.artifact_comparisons[0].match is False
+    assert all(
+        item.match
+        for item in comparison.artifact_comparisons[1:10]
+    )
