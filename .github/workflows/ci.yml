@@ -44,7 +44,7 @@ jobs:
       - name: Smoke test live Render MVP
         run: |
           curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors https://thenet-eew6.onrender.com/health
-          curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors https://thenet-eew6.onrender.com/ | grep -q "theNet MVP 0.1"
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors https://thenet-eew6.onrender.com/ | grep -q "theNet 3.0 MVP"
           curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors \
             -X POST https://thenet-eew6.onrender.com/v1/closure \
             -H "Content-Type: application/json" \
