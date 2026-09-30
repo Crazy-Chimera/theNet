@@ -17,6 +17,7 @@ from src.genesis_population import create_genesis_population
 from src.resource_state import create_resource_state
 from src.evidence_graph import build_evidence_graph
 from src.evidence_query import query_evidence_graph, trace_evidence_path
+from src.replay import compare_recursive_replay
 from src.postgres_store import PostgresStore
 from src.relation import create_relation
 from src.sqlite_store import SQLiteStore
@@ -86,6 +87,7 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             "/v1/closure": self._build_closure,
             "/v1/control/demo": self._control_demo,
             "/v1/control/query": self._control_query,
+            "/v1/control/replay": self._control_replay,
         }
         path = urlparse(self.path).path
         handler = routes.get(path)
@@ -162,34 +164,32 @@ class RuntimeHandler(BaseHTTPRequestHandler):
         return result
 
 
-    def _control_demo(self, payload: dict[str, Any]) -> dict[str, Any]:
-        """Run one deterministic three-cycle F10.3 demonstration for Control Room."""
+    def _control_run(self):
         population = create_genesis_population(3, "2026-09-30T00:00:00Z")
         initial = population.agents[0]
         memory = create_resource_state(100.0, 0.0, "2026-09-30T00:00:00Z")
         compute = create_resource_state(100.0, 0.0, "2026-09-30T00:00:00Z")
-        run = run_recursive_convergence_mvp(
+        return run_recursive_convergence_mvp(
             population=population,
             initial_state=initial,
             proposal_builder=lambda index, state, previous: (
-                "observe initial state"
-                if previous is None
+                "observe initial state" if previous is None
                 else f"refine from memory {previous.result.memory.id}"
             ),
             executor=lambda proposal: f"executed:{proposal.proposal}",
             quorum=2,
             new_singularity_builder=lambda index, proposal: f"control-room:{index}:{proposal.id}",
-            created_at=(
-                "2026-09-30T00:00:01Z",
-                "2026-09-30T00:00:02Z",
-                "2026-09-30T00:00:03Z",
-            ),
+            created_at=("2026-09-30T00:00:01Z", "2026-09-30T00:00:02Z", "2026-09-30T00:00:03Z"),
             memory_resource=memory,
             compute_resource=compute,
             adaptive_memory_capacity=100.0,
             adaptive_compute_capacity=100.0,
             utility_builder=lambda index, previous: min(float(index) / 2.0, 1.0),
         )
+
+    def _control_demo(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Run one deterministic three-cycle F10.3 demonstration for Control Room."""
+        run = self._control_run()
         learning = run.learning_metrics
         allocation = run.adaptive_resource_allocation(100.0, 100.0)
         return {
@@ -222,10 +222,8 @@ class RuntimeHandler(BaseHTTPRequestHandler):
                         "state_id": cycle.result.state.id,
                     },
                     "metrics": {
-                        "k": cycle.result.metrics.k,
-                        "c": cycle.result.metrics.c,
-                        "r": cycle.result.metrics.r,
-                        "phi": cycle.result.metrics.phi,
+                        "k": cycle.result.metrics.k, "c": cycle.result.metrics.c,
+                        "r": cycle.result.metrics.r, "phi": cycle.result.metrics.phi,
                         "converged": cycle.result.metrics.converged,
                     },
                     "learning": {
@@ -235,46 +233,23 @@ class RuntimeHandler(BaseHTTPRequestHandler):
                         "memory_dependency": learning[cycle.index - 1].memory_dependency,
                         "verified_improvement": learning[cycle.index - 1].verified_improvement,
                     },
-                }
-                for cycle in run.cycles
+                } for cycle in run.cycles
             ],
             "allocation": {
-                "id": allocation.id,
-                "improvement_bonus": allocation.improvement_bonus,
-                "memory_by_cycle": allocation.memory_by_cycle,
-                "compute_by_cycle": allocation.compute_by_cycle,
-                "total_memory": allocation.total_memory,
-                "total_compute": allocation.total_compute,
+                "id": allocation.id, "improvement_bonus": allocation.improvement_bonus,
+                "memory_by_cycle": allocation.memory_by_cycle, "compute_by_cycle": allocation.compute_by_cycle,
+                "total_memory": allocation.total_memory, "total_compute": allocation.total_compute,
             },
             "evidence_graph": build_evidence_graph(run).as_dict(),
             "resource_state": {
                 "memory_available": run.final_memory_resource.available,
                 "compute_available": run.final_compute_resource.available,
-                "memory_id": run.final_memory_resource.id,
-                "compute_id": run.final_compute_resource.id,
+                "memory_id": run.final_memory_resource.id, "compute_id": run.final_compute_resource.id,
             },
         }
-
     def _control_query(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Query the deterministic Evidence Graph produced by the Control Room demo."""
-        graph = build_evidence_graph(
-            run_recursive_convergence_mvp(
-                population=create_genesis_population(3, "2026-09-30T00:00:00Z"),
-                initial_state=create_genesis_population(3, "2026-09-30T00:00:00Z").agents[0],
-                proposal_builder=lambda index, state, previous: (
-                    "observe initial state"
-                    if previous is None
-                    else f"refine from memory {previous.result.memory.id}"
-                ),
-                executor=lambda proposal: f"executed:{proposal.proposal}",
-                quorum=2,
-                new_singularity_builder=lambda index, proposal: f"control-query:{index}:{proposal.id}",
-                created_at=("2026-09-30T00:00:01Z", "2026-09-30T00:00:02Z", "2026-09-30T00:00:03Z"),
-                memory_resource=create_resource_state(100.0, 0.0, "2026-09-30T00:00:00Z"),
-                compute_resource=create_resource_state(100.0, 0.0, "2026-09-30T00:00:00Z"),
-                utility_builder=lambda index, previous: min(float(index) / 2.0, 1.0),
-            )
-        )
+        graph = build_evidence_graph(self._control_run())
         operation = payload.get("operation", "query")
         if operation == "path":
             result = trace_evidence_path(
@@ -294,6 +269,12 @@ class RuntimeHandler(BaseHTTPRequestHandler):
                 node_type=payload.get("node_type"),
             )
         return {"graph_id": graph.id, "query": result.as_dict()}
+
+    def _control_replay(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Run the canonical Control Room experiment twice and compare immutable artifacts."""
+        original = self._control_run()
+        replay = self._control_run()
+        return compare_recursive_replay(original, replay).as_dict()
 
     def _state_snapshot(self) -> dict[str, Any]:
         with _STATE_LOCK:
