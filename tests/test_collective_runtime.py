@@ -61,7 +61,7 @@ def test_runtime_closes_collective_computation_loop():
     assert result.outcome.proposal_id == result.commit.proposal_id
     assert result.memory.source_id == result.outcome.id
     assert result.utility.verified is True
-    assert result.utility.evidence_ids == (result.memory.id, result.outcome.id)
+    assert result.utility.evidence_ids == tuple(sorted((result.memory.id, result.outcome.id)))
     assert result.credit.verified is True
     assert result.credit.credit > 0.0
     assert result.contribution_ledger.entries == (result.credit.id,)
@@ -145,7 +145,7 @@ def test_runtime_rejects_replayed_commit():
     first = _run()
     state, proposal, verifications, memory, compute = _inputs()
 
-    with pytest.raises(ValueError, match="replay"):
+    with pytest.raises(ValueError, match="already been applied"):
         run_collective_computation(
             state,
             proposal,
