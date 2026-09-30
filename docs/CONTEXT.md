@@ -45,7 +45,7 @@ Identity(t+1) ≈ Identity(t) + verified evolution
 
 The requested six-module verification view is treated as an operational map, not as a claim that six identically named packages currently exist.
 
-- Identita: no dedicated identity package is currently present. Identity/provenance is distributed across deterministic IDs, state objects, verification and execution/history layers. Ed25519/DID/vault behavior is therefore NOT VERIFIED by the current repository.
+- Identita: `src/identity.py` now provides Ed25519 identity generation, deterministic `did:thenet:` identifiers, message signing/verification, and an encrypted file-backed MVP vault. Unit tests verify persistence, tampering, wrong identities/passwords, empty and large messages, invalid inputs, immutability, and absence of plaintext private keys. This is an MVP vault boundary, not a managed KMS/HSM.
 - Agent: agent_state.py, closure and collective-computation orchestration provide the current Agent Ω state boundary.
 - Paměť: memory.py, evolution_memory.py and related persistence contracts.
 - Síť: thenet/server.py, HTTP runtime and runtime persistence currently provide the network boundary. A dedicated WebSocket bootstrap/peer module is NOT VERIFIED by the current repository.
