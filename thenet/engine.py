@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.agent_state import AgentState, create_agent_state
+from src.collective_runtime import CollectiveComputationResult, run_collective_computation
 from src.co_definition import RelationalCoDefinition, create_co_definition
 from src.collective_evolution import CollectiveEvolution, evolve_collectively
 from src.commit import EvolutionCommit, create_evolution_commit
@@ -316,3 +317,33 @@ def find_execution_records_by_contribution_ledger(
 ) -> tuple[ExecutionRecord, ...]:
     """Retrieve all execution records linked to one contribution ledger."""
     return audit.find_records_by_contribution_ledger(contribution_ledger_id)
+
+
+def run_collective_computation_mvp(
+    current_state: AgentState,
+    proposal: Proposal,
+    verifications: list[Verification],
+    quorum: int,
+    new_singularity_id: str,
+    created_at: str,
+    memory_resource: ResourceState,
+    compute_resource: ResourceState,
+    executor,
+    *,
+    utility: float = 1.0,
+    prior_commits: list[EvolutionCommit] | None = None,
+) -> CollectiveComputationResult:
+    """Expose the v2.7 proposal-to-outcome collective runtime."""
+    return run_collective_computation(
+        current_state=current_state,
+        proposal=proposal,
+        verifications=verifications,
+        quorum=quorum,
+        new_singularity_id=new_singularity_id,
+        created_at=created_at,
+        memory_resource=memory_resource,
+        compute_resource=compute_resource,
+        executor=executor,
+        utility=utility,
+        prior_commits=() if prior_commits is None else prior_commits,
+    )
