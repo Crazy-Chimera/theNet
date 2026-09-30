@@ -167,8 +167,13 @@ class NetworkLifecycleService:
             proposal_text=proposal_text,
         )
         self.runtime = NetworkRuntime(database, self.bootstrap.network, created_at=created_at)
-        for item in self.bootstrap.agents:
-            self.runtime.add_agent(item.admission.membership, item.agent)
+        # The persistent registry is authoritative across process restarts.
+        # Bootstrap agents are inserted only when the network has never had
+        # membership state; removed agents must remain removed until an
+        # explicit JOIN arrives through the lifecycle boundary.
+        if not self.runtime.active_members() and not self.runtime.membership_events():
+            for item in self.bootstrap.agents:
+                self.runtime.add_agent(item.admission.membership, item.agent)
         for handshake in self.bootstrap.handshakes:
             try:
                 self.runtime.register_handshake(handshake, created_at=created_at)
