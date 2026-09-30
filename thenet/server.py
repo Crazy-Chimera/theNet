@@ -28,7 +28,7 @@ _STATE: dict[str, list[dict[str, Any]]] = {
 
 def create_runtime_store():
     """Select durable PostgreSQL when configured, otherwise local SQLite."""
-    dsn = os.getenv("THENET_POSTGRES_DSN")
+    dsn = os.getenv("DATABASE_URL") or os.getenv("THENET_POSTGRES_DSN")
     if dsn:
         return PostgresStore(dsn)
 
