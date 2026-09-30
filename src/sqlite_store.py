@@ -14,7 +14,7 @@ class SQLiteStore:
     """Small transactional store that preserves domain objects unchanged."""
 
     def __init__(self, path: str | Path = ":memory:") -> None:
-        self._connection = sqlite3.connect(str(path))
+        self._connection = sqlite3.connect(str(path), check_same_thread=False)
         self._connection.execute("PRAGMA foreign_keys = ON")
         self._initialize()
 
