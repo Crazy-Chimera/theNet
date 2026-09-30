@@ -82,8 +82,8 @@ def test_genesis_identifiers_can_form_phi_edges():
 
 
 def test_observation_materializes_exact_phi_structure():
-    flow = start_user_flow("request-1", STAMP, "agent-a")
-    relation = make_relation("agent-a", "agent-b")
+    flow = start_user_flow("request-1", "agent-a", STAMP)
+    relation = make_relation(flow.context.genesis.id, "agent-b")
     flow = add_relation(flow, relation)
     observation = observe(
         create_state(flow)
@@ -96,8 +96,8 @@ def test_observation_materializes_exact_phi_structure():
 
 
 def test_observation_relation_mismatch_is_rejected():
-    flow = start_user_flow("request-1", STAMP, "agent-a")
-    relation = make_relation("agent-a", "agent-b")
+    flow = start_user_flow("request-1", "agent-a", STAMP)
+    relation = make_relation(flow.context.genesis.id, "agent-b")
     flow = add_relation(flow, relation)
     observation = observe(
         __import__("src.state", fromlist=["create_state"]).create_state(flow)
