@@ -246,6 +246,47 @@ function renderEvents() {
   `).join("");
 }
 
+
+function renderGraphs() {
+  const memory = $("memory-graph");
+  const agents = $("agent-graph");
+
+  if (state.control?.cycles?.length) {
+    const cycles = state.control.cycles;
+    memory.className = "evidence-graph";
+    memory.innerHTML = cycles.map(function(cycle, index) {
+      const previous = index === 0 ? "GENESIS" : cycles[index - 1].audit.memory_id;
+      return '<div class="graph-row">' +
+        '<span class="graph-node root"><small>CYCLE ' + cycle.index + '</small><code>' + text(cycle.audit.memory_id) + '</code></span>' +
+        '<span class="graph-arrow">→</span>' +
+        '<span class="graph-node"><small>MEMORY</small><code>' + text(cycle.audit.memory_id) + '</code></span>' +
+        '<span class="graph-arrow">→</span>' +
+        '<span class="graph-node"><small>NEXT STATE</small><code>' + text(cycle.audit.state_id) + '</code></span>' +
+        (index === 0 ? '<span class="graph-origin">origin: ' + text(previous) + '</span>' : '') +
+        '</div>';
+    }).join("");
+  } else {
+    memory.className = "evidence-graph empty-state";
+    memory.textContent = "Run a recursive cycle to build the memory lineage.";
+  }
+
+  if (state.relations.length) {
+    agents.className = "evidence-graph";
+    agents.innerHTML = state.relations.map(function(relation) {
+      const source = state.genesis.find(function(item) { return item.id === relation.source_id; });
+      const target = state.genesis.find(function(item) { return item.id === relation.target_id; });
+      return '<div class="graph-row">' +
+        '<span class="graph-node"><small>SOURCE</small><strong>' + text(source?.subject ?? relation.source_id) + '</strong><code>' + text(relation.source_id) + '</code></span>' +
+        '<span class="graph-arrow">→</span>' +
+        '<span class="graph-node"><small>' + text(relation.kind) + '</small><strong>' + text(target?.subject ?? relation.target_id) + '</strong><code>' + text(relation.target_id) + '</code></span>' +
+        '</div>';
+    }).join("");
+  } else {
+    agents.className = "evidence-graph empty-state";
+    agents.textContent = "No runtime relations yet.";
+  }
+}
+
 function render() {
   $("genesis-count").textContent = state.genesis.length;
   $("relation-count").textContent = state.relations.length;
@@ -257,6 +298,7 @@ function render() {
   renderClosures();
   renderEvents();
   renderControl();
+  renderGraphs();
 }
 
 $("genesis-created-at").value = nowInputValue();
