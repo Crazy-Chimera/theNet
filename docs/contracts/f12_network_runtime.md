@@ -46,3 +46,18 @@ This creates two deliberate semantics:
 
 1. Historical reproducibility: old snapshots remain executable/auditable against their original quorum.
 2. Fresh-start safety: a new computation can require validate_snapshot_current() before it begins.
+
+
+## F12.9 hardening
+
+Handshake registration is replay-protected at the persistent session layer: a handshake ID is unique, and attempting to register the same completed handshake again is rejected rather than replacing the existing session.
+
+Membership transitions are append-audited through `network_runtime_membership_events`. Each join, leave, or rejoin advances the network membership epoch and records the affected Agent, event type, epoch, and creation marker.
+
+The epoch therefore has an explicit audit interpretation:
+
+`E0 -> JOIN(agent-0) -> E1 -> JOIN(agent-1) -> E2 -> ...`
+
+The persisted audit event is evidence of the transition that produced the epoch. Historical snapshots continue to reference their own epoch and remain immutable.
+
+The F11 cryptographic handshake contract remains the trust boundary for signatures; F12 session registration does not replace that verification. F12 adds persistence-level replay protection around an already-completed handshake.
