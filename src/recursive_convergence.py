@@ -15,6 +15,7 @@ from src.genesis_population import GenesisPopulation
 from src.proposal import Proposal, create_proposal
 from src.resource_state import ResourceState
 from src.verification import create_verification
+from src.recursive_learning_metrics import RecursiveLearningMetrics, measure_recursive_learning
 
 
 @dataclass(frozen=True)
@@ -56,12 +57,17 @@ class RecursiveConvergenceRun:
     def outcome_chain(self) -> tuple[str, ...]:
         return tuple(cycle.result.outcome.id for cycle in self.cycles)
 
+    @property
+    def learning_metrics(self) -> tuple[RecursiveLearningMetrics, ...]:
+        return measure_recursive_learning(self.cycles)
+
 
 ProposalBuilder = Callable[
     [int, AgentState, RecursiveCycle | None],
     str,
 ]
 Executor = Callable[[Proposal], str]
+UtilityBuilder = Callable[[int, RecursiveCycle | None], float]
 
 
 def run_recursive_convergence(
@@ -76,6 +82,7 @@ def run_recursive_convergence(
     memory_resource: ResourceState,
     compute_resource: ResourceState,
     utility: float = 1.0,
+    utility_builder: UtilityBuilder | None = None,
 ) -> RecursiveConvergenceRun:
     """Run deterministic proposal→outcome→memory→next-proposal cycles.
 
@@ -96,6 +103,8 @@ def run_recursive_convergence(
         raise TypeError("executor must be callable")
     if not callable(new_singularity_builder):
         raise TypeError("new_singularity_builder must be callable")
+    if utility_builder is not None and not callable(utility_builder):
+        raise TypeError("utility_builder must be callable when provided")
     if not isinstance(created_at, tuple) or not created_at:
         raise ValueError("created_at must be a non-empty tuple")
     if len(created_at) < 1:
@@ -145,7 +154,11 @@ def run_recursive_convergence(
             memory_resource=memory,
             compute_resource=compute,
             executor=executor,
-            utility=utility,
+            utility=(
+                utility_builder(index, previous)
+                if utility_builder is not None
+                else utility
+            ),
             prior_commits=tuple(prior_commits),
         )
         cycles.append(
