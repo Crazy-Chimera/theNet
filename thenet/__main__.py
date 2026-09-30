@@ -1,13 +1,9 @@
-"""Deployment entry point for theNet."""
+"""Module entry point for theNet CLI."""
 
 from __future__ import annotations
 
-from thenet.server import serve
-
-
-def main() -> None:
-    serve()
+from thenet.cli import main
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
